@@ -20,29 +20,29 @@
 #
 # NOTE:     No spaces in bash env. variables!! (al)
 
-# Ensure that user has set environment variable for "SPIDER_DIR"
-if [ -z ${SPIDER_DIR} ]; 
-   then echo "set ENVIRONMENT VARIABLE: SPIDER_DIR to location of your SPIDER distribution"; exit ;
-else echo " SPIDER_DIR is:  $SPIDER_DIR";  fi
-
-SPIRE_DIR=$SPIDER_DIR/spire-dist
-
-#SPIRE_DIR=`pwd`
+## Ensure that user has set environment variable for "SPIDER_DIR"
+#if [ -z ${SPIDER_DIR} ]; 
+#   then echo "set ENVIRONMENT VARIABLE: SPIDER_DIR to location of your SPIDER distribution"; exit ;
+#else echo " SPIDER_DIR is:  $SPIDER_DIR";  fi
+#
+#SPIRE_DIR=$SPIDER_DIR/spire-dist
+SPIRE_DIR=$(dirname $(realpath $0))
+echo "SPIRE directory is: $SPIRE_DIR"
 SPIRE_BIN_DIR=$SPIRE_DIR/bin
 SPIRE_LIB_DIR=$SPIRE_DIR/lib
 #echo " SPIRE_BIN_DIR is:  $SPIRE_BIN_DIR";  
 
-# Ensure that user has extracted the spire.tar archive"
-if [ -a ${SPIRE_DIR}/spire.tar ] 
-   then  echo " Already unpacked: spire.tar " 
-else
-   echo " Unpacking: spire.tar.gz  please wait" 
-   gunzip spire.tar.gz 
-   tar xf spire.tar 
-   echo " Unpacked: spire.tar " 
-fi
+## Ensure that user has extracted the spire.tar archive"
+#if [ -e ${SPIRE_DIR}/spire.tar ] 
+#   then  echo " Already unpacked: spire.tar " 
+#else
+#   echo " Unpacking: spire.tar.gz  please wait" 
+#   gunzip spire.tar.gz 
+#   tar xf spire.tar 
+#   echo " Unpacked: spire.tar " 
+#fi
  
-# \rm *.pyc */*.pyc */*/*.pyc */*/*/*.pyc */*/*/*/*.pyc */*/*/*/*/*.pyc */*/*/*/*/*/*.pyc */*/*/*/*/*/*/*.pyc */*/*/*/*/*/*/*/*.pyc
+\rm *.pyc */*.pyc */*/*.pyc */*/*/*.pyc */*/*/*/*.pyc */*/*/*/*/*.pyc */*/*/*/*/*/*.pyc */*/*/*/*/*/*/*.pyc */*/*/*/*/*/*/*/*.pyc 2> /dev/null
 
 # Compile Python library & site packages using SPIDER's Python 2.5 --------
 
@@ -53,12 +53,21 @@ PYTHON_LIB=$SPIRE_LIB_DIR/$PYTHON_VERSION
 echo ' Compiling:      '$PYTHON_LIB library
 $PYTHON $PYTHON_LIB/compileall.py -f $PYTHON_LIB
 
-# Compile Python library & site packages using SPIDER's Python 2.7 --------
+# # Compile Python library & site packages using SPIDER's Python 2.7 --------
+#
+# PYTHON_VERSION=python2.7
+# PYTHON=$SPIRE_BIN_DIR/$PYTHON_VERSION
+# PYTHON_LIB=$SPIRE_LIB_DIR/$PYTHON_VERSION
+#
+# echo ' Compiling:      '$PYTHON_LIB library
+# $PYTHON $PYTHON_LIB/compileall.py -f $PYTHON_LIB
 
-PYTHON_VERSION=python2.7 
-PYTHON=$SPIRE_BIN_DIR/$PYTHON_VERSION
+# Compile Python library & site packages using Python 3 --------
+
+PYTHON_VERSION=python3.6
+PYTHON=$(which $PYTHON_VERSION)  # $SPIRE_BIN_DIR/$PYTHON_VERSION
 PYTHON_LIB=$SPIRE_LIB_DIR/$PYTHON_VERSION
- 
+
 echo ' Compiling:      '$PYTHON_LIB library
 $PYTHON $PYTHON_LIB/compileall.py -f $PYTHON_LIB
 

@@ -10,18 +10,18 @@
 # Email:    spider@health.ny.gov
 
 import os, string, sys
-from   commands import getoutput
+from   subprocess import getoutput
 import webbrowser
 
-from   Tkinter import *
-from   tkFileDialog   import askdirectory
-from   tkMessageBox   import askyesno
+from   tkinter import *
+from   tkinter.filedialog   import askdirectory
+from   tkinter.messagebox   import askyesno
 from   PIL            import Image
 from   PIL            import ImageTk
 import Pmw
 
-from   idlelib        import ZoomHeight
-from   Spider         import Spiderutils
+from   idlelib.zoomheight import ZoomHeight
+from   Spider             import Spiderutils
 
 icondict = {}
 
@@ -38,7 +38,7 @@ def listicons(root):
     win = Toplevel(root)
     win.title('icons')
 
-    names = icondict.keys()
+    names = list(icondict.keys())
     names.sort()
     N = len(names)
     
@@ -187,7 +187,7 @@ class TreeNode:
         self.parent = None
 
     def geticonimage(self, name):
-        if self.icondict.has_key(name):
+        if name in self.icondict:
             image = self.icondict[name]
             return image
 
@@ -682,7 +682,7 @@ class FileTreeItem(TreeItem):
 
 class ScrolledCanvas:
     def __init__(self, master, **opts):
-        if not opts.has_key('yscrollincrement'):
+        if 'yscrollincrement' not in opts:
             opts['yscrollincrement'] = 17
         self.master = master
         self.frame = Frame(master)
@@ -833,7 +833,7 @@ class TreeViewer:
         if event != None:
             newdir = self.entry.get()
             if not os.path.exists(newdir):
-                print "directory %s not found" % newdir
+                print("directory %s not found" % newdir)
                 return
             os.chdir(newdir)
             self.ddir = os.getcwd()
@@ -910,7 +910,7 @@ if __name__ == '__main__':
     if  len(sys.argv[1:]) > 0:
         ddir = sys.argv[1]
         if not os.path.exists(ddir):
-            print "cannot find %s" % ddir
+            print("cannot find %s" % ddir)
             sys.exit()
         else:
             os.chdir(ddir)

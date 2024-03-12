@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 import sys, os, re
-from commands import getoutput
+from subprocess import getoutput
 
 def testSpider(spiderpath):
     file = 'test6637'
@@ -58,7 +58,7 @@ def findwhich(program, verbose=0):
     cmd = 'which %s' % program
     res = getoutput(cmd)
     if verbose:
-        print res
+        print(res)
     wlist = res.split('\n')
     progpath = []
     for which in wlist:
@@ -93,14 +93,14 @@ def findpath(program, verbose=0):
     if len(whichlist) != 0:
         for w in whichlist:
             if not os.path.exists(w):
-                if verbose: print "which: %s : not a valid path" % w
+                if verbose: print("which: %s : not a valid path" % w)
             else:
                 found = 1
                 if w not in progpath:
                     if w not in progpath:
                         progpath.append(w)
                     if verbose:
-                        print "The 'which' command located spider executable %s" % w
+                        print("The 'which' command located spider executable %s" % w)
             
     if len(progpath) > 0:
         return progpath
@@ -119,7 +119,7 @@ def findpath(program, verbose=0):
     rcfile = os.path.expanduser(rcfile)
 
     if os.path.exists(rcfile):
-        if verbose: print "Looking for %s in %s" % (program, rcfile)
+        if verbose: print("Looking for %s in %s" % (program, rcfile))
         fp = open(rcfile,'r')
         B = fp.readlines()
         fp.close()
@@ -131,7 +131,7 @@ def findpath(program, verbose=0):
                     a = line.replace('alias','',1)
                     b = a.replace(program,'',1).strip()
                     p = unquote(b)
-                    if verbose: print "found %s in %s" % (p, rcfile)
+                    if verbose: print("found %s in %s" % (p, rcfile))
                     # if len == 1, then see if it's a path
                     if len(p) == 1:
                         if os.path.exists(p):
@@ -139,7 +139,7 @@ def findpath(program, verbose=0):
                                 progpath.append(p)
                                 found = 1
                         else:
-                            if verbose: print "...but it's not a valid path."
+                            if verbose: print("...but it's not a valid path.")
                     # if len > 1 then it may be a command with args
                     else:
                         progpath.append(p)
@@ -149,7 +149,7 @@ def findpath(program, verbose=0):
                     s = line.split()
                     for item in s:
                         if os.path.exists(item):
-                            if verbose: print "checking %s" % item
+                            if verbose: print("checking %s" % item)
                             fp = open(item,'r')
                             C = fp.readlines()
                             fp.close()
@@ -161,13 +161,13 @@ def findpath(program, verbose=0):
                                     p = unquote(b)
                                     if len(p) == 1:
                                         if p not in progpath:
-                                            if verbose: print "found %s in %s" % (p, item)
+                                            if verbose: print("found %s in %s" % (p, item))
                                             if os.path.exists(p):
                                                 if p not in progpath:
                                                     progpath.append(p)
                                                 found = 1
                                             else:
-                                                if verbose: print "but %s not a valid path" % p
+                                                if verbose: print("but %s not a valid path" % p)
                                     else:
                                         if p not in progpath:
                                             progpath.append(p)
@@ -180,27 +180,27 @@ def findpath(program, verbose=0):
                     prog = s[0].split()[1]
                     if prog == program:
                         p = unquote(s[1])
-                        if verbose: print "found %s in %s" % (p, rcfile)
+                        if verbose: print("found %s in %s" % (p, rcfile))
                         if os.path.exists(p):
                             if p not in progpath:
                                 progpath = p
                             found = 1
                         else:
-                            if verbose: print "but %s not a valid path" % p
+                            if verbose: print("but %s not a valid path" % p)
     return progpath
         
 
 if __name__ == '__main__':
     
     pathlist = findpath('spider', verbose=1)
-    print pathlist
+    print(pathlist)
     if len(pathlist) == 0:
-        print "spider executable not found"
+        print("spider executable not found")
         sys.exit()
     for path in pathlist:
         if testSpider(path):
-            print "%s can successfuly run Spider" % (path)
-    print
+            print("%s can successfuly run Spider" % (path))
+    print()
     # jweb ---------------------------
     
     JWEB_DIR = ""
@@ -211,15 +211,15 @@ if __name__ == '__main__':
     
     jw  = findpath('jweb', verbose=1)
     if len(jw) > 0:
-        print "The following are possible aliases for jweb:"
+        print("The following are possible aliases for jweb:")
         for item in jw:
-            print item
+            print(item)
             if item.find(JWEB_DIR) > -1:
                 jwebcmd = item
     else:
-        print "unable to find jweb."
+        print("unable to find jweb.")
 
     if jwebcmd != "":
-        print "try running jweb with:"
-        print jwebcmd
+        print("try running jweb with:")
+        print(jwebcmd)
 

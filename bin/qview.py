@@ -28,18 +28,18 @@ import                 os, sys, threading
 import                 time
 from   socket          import *
 
-from   Spider          import *  
-from   Spider          import SpiderImageSeries  
-#import                SpiderImagePlugin  #2018 al        
+###from   Spider          import *
+from   Spider          import SpiderImageSeries
 from   Spider          import SpiderImagePlugin #2018 al          
 
-from   Tkinter         import *
-from   tkMessageBox    import askyesno
+#from   tkinter               import *
+from   tkinter               import Tk, Label
+from   tkinter.messagebox    import askyesno
 
 import                 Pmw                                            
 
 from   PIL             import ImageTk
-from   PIL             import Image                                
+from   PIL             import Image
 
 
 #print '\n'.join(sys.path)                             
@@ -106,7 +106,7 @@ class QuickWindow:
         if filename != None:  # starting a new server
             im = self.filename2image(filename)
             if im == None:
-                print "Unable to load %s" % filename
+                print("109 Unable to load %s" % filename)
                 return
             self.IM['0'] = im
 
@@ -125,7 +125,7 @@ class QuickWindow:
             bw = 0  # no border
             
         self.min = 0
-        self.max = len(self.IM.keys()) - 1
+        self.max = len(list(self.IM.keys())) - 1
 
         self.filelabel = Label(self.top, text="")
         self.filelabel.pack(side='top', expand=1, fill='x')
@@ -183,7 +183,7 @@ class QuickWindow:
         " Used by Server to send images to the GUI "
         im = self.filename2image(filename)
         if im == None:
-            print "Unable to load %s" % filename
+            print("186 Unable to load %s" % filename)
             return
         next = self.max + 1
         self.IM[str(next)] = im
@@ -239,7 +239,7 @@ def findServer():
         return None
 
 def helpmessage():
-    print "Usage: qview.py [-s] imagefile(s)"
+    print("Usage: qview.py [-s] imagefile(s)")
     sys.exit()
 
 def processargs(args):
@@ -281,7 +281,7 @@ def processargs(args):
                and file[0] != '.':   
                 filenames.append(file)
         if len(filenames) == 0:
-            print "No images found in: %s" % os.getcwd()
+            print("No images found in: %s" % os.getcwd())
             sys.exit()
             
     return (serverflag, filenames, cwd)
@@ -329,6 +329,7 @@ if __name__ == '__main__':
     # No server: just start up image window
     if serverflag == 0 :
 	#print("qview,              Calling loadimages: %s") %filelist  #!!!!!!!!!!!!!
+        ###print(f"{os.path.basename(__file__)}:332: SpiderImagePlugin: {SpiderImagePlugin.__file__}")
         imglist = loadimages(filelist, directory=cwd)
 	#print("qview,              After loadimages")                  #!!!!!!!!!!!!!
 
@@ -348,13 +349,13 @@ if __name__ == '__main__':
         # ----- Client -----
         if sockobj:           # Then send info to server, and exit
             if verbose:
-                print "Sending %s to existing server" % filename
+                print("Sending %s to existing server" % filename)
             sockobj.send(filename)     # send line to server over socket
             data = sockobj.recv(1024)  # receive line from server
             if verbose:
-                print "qview client received %s" % data
+                print("qview client received %s" % data)
                 if data.find("qview") < 0:
-                    print "qview client received incorrect feedback from server"
+                    print("qview client received incorrect feedback from server")
                     # Data should be of form "qview : filename"
             sockobj.close()
 

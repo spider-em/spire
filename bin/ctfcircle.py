@@ -10,7 +10,7 @@
 
 import sys
 
-from   Tkinter       import *
+from   tkinter       import *
 from   PIL           import Image, ImageTk, ImageDraw
 from   Spider        import SpiderImagePlugin  # 2018 al
 

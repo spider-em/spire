@@ -2,4 +2,4 @@
 
 SPIRE_EXE=`which spire` ; SPIRE_BIN_DIR=`dirname $SPIRE_EXE`
 
-exec "$SPIRE_BIN_DIR/use-python2.7" "$SPIRE_BIN_DIR/ctfcircle.py" "$@"
+exec "$SPIRE_BIN_DIR/use-python3" "$SPIRE_BIN_DIR/ctfcircle.py" "$@"
