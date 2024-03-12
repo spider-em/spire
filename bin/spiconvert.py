@@ -7,8 +7,8 @@ from  PIL import Image
 import           os, sys
 
 if len(sys.argv[1:]) < 2:
-    print "Syntax: spiconvert.py infile outfile"
-    print "To save as a SPIDER file, must specify extension: .spi"
+    print("Syntax: spiconvert.py infile outfile")
+    print("To save as a SPIDER file, must specify extension: .spi")
     sys.exit()
 
 filename = sys.argv[1]

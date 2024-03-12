@@ -8,11 +8,11 @@
 # Copyright (C) 2006-2018  Health Research Inc., Menands, NY
 # Email:    spider@health.ny.gov
 
-from   Tkinter        import *
-from   tkFileDialog   import asksaveasfilename, askopenfilename
+from   tkinter        import *
+from   tkinter.filedialog   import asksaveasfilename, askopenfilename
 
 import Pmw
-import tkMessageBox                  # Used for showerror
+import tkinter.messagebox                  # Used for showerror
 import Gnuplot, Gnuplot.funcutils
 import os
 import sys
@@ -149,7 +149,7 @@ class MyGnuplotPlot:
             item.pack_forget()
             del(item)
             
-        keys = self.f2.children.keys()
+        keys = list(self.f2.children.keys())
         for key in keys:
             wgt = self.f2.children[key]
             wgt.pack_forget()
@@ -232,7 +232,7 @@ class MyGnuplotPlot:
             c.pack(side=TOP, anchor='w')
             #self.plotSelected()
         else:
-            tkMessageBox.showerror('Error', '%s is already in the list' % item)
+            tkinter.messagebox.showerror('Error', '%s is already in the list' % item)
 
     def uncheck(self):
         for item in self.displaylist:
@@ -264,9 +264,9 @@ class MyGnuplotPlot:
         pstr = "set term post; set output 'plot.ps'; replot; set output; set terminal x11"
         self.gnuplot(pstr)
         cmd = "lp -ops plot.ps"
-        print cmd
+        print(cmd)
         os.system(cmd)
-        print os.system("lpstat")
+        print(os.system("lpstat"))
         
     def checkColRange(self,yrange):
         if yrange.find(":") == -1: return -1
@@ -287,12 +287,12 @@ class MyGnuplotPlot:
             if item != '':
                 try:
                     i = int(item)
-                except ValueError, e:
+                except ValueError as e:
                     return -1
         return 0
         
     def rangeError(self):
-        tkMessageBox.showerror('Error', 'Entries must be of the form:\n\tLo:Hi\n where Lo and Hi are numbers')
+        tkinter.messagebox.showerror('Error', 'Entries must be of the form:\n\tLo:Hi\n where Lo and Hi are numbers')
 
     def validateColumns(self):
         colstr = self.cols.get()
@@ -311,7 +311,7 @@ class MyGnuplotPlot:
                 if item != '':
                     try:
                         float(item)
-                    except ValueError, e:
+                    except ValueError as e:
                         return -1
             return 0
         
@@ -469,8 +469,8 @@ if __name__ == '__main__':
         else:
             filelist = sys.argv[1:]
     else:
-        print " Usage: pyplot.py -s files*"
-        print "  (optional -s flag for small font)"
+        print(" Usage: pyplot.py -s files*")
+        print("  (optional -s flag for small font)")
         sys.exit()
 
     if not smallflag:

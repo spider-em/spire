@@ -20,7 +20,7 @@ def unique(L):
     D = {}
     for n in L:
         D[n] = 1
-    return D.keys()
+    return list(D.keys())
 
 def backup(filename):
     if os.path.exists(filename):
@@ -35,14 +35,14 @@ def backup(filename):
                 found_vacancy = 1
                 short_old = os.path.join(shortdir, os.path.basename(filename))
                 short_new = os.path.join(shortdir, os.path.basename(test_filename))
-                print 'Renamed', short_old, 'to', short_new
+                print('Renamed', short_old, 'to', short_new)
                 os.rename(filename, test_filename)
 
 nargs = len(sys.argv[1:])
 
 if nargs < 2:
-    print 'Usage: mkfilenums.py [-f] outdocfile file**pattern '
-    print "\nMake file numbers from a list of filenames. First argument is the output file!"
+    print('Usage: mkfilenums.py [-f] outdocfile file**pattern ')
+    print("\nMake file numbers from a list of filenames. First argument is the output file!")
     sys.exit()
 
 if sys.argv[1] == '-f' :
@@ -56,11 +56,11 @@ else:
     filelist = sys.argv[2:]
 
     if os.path.exists(outfile):
-        print
-        print 'WARNING!', outfile, 'exists.'
-        print 'Output filename should be the first argument.'
-        print 'Delete pre-existing file, use a different filename, or use -f flag to back up file.'
-        print
+        print()
+        print('WARNING!', outfile, 'exists.')
+        print('Output filename should be the first argument.')
+        print('Delete pre-existing file, use a different filename, or use -f flag to back up file.')
+        print()
         sys.exit()
 
 numdict  = {}
@@ -72,10 +72,10 @@ for file in filelist:
     numdict[key] = [filenumber(file),classnum]
 
 #numdict = unique(numdict)    # Remove duplicates
-numdict.keys().sort()
+list(numdict.keys()).sort()
 
 writedoc(outfile, numdict)
 #writedoc(outfile, columns=[numdict])
 
 length = len(numdict)
-print length, "Keys written to", outfile
+print(length, "Keys written to", outfile)

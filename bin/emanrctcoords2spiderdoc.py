@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 #
 # MODIFICATIONS:
+#    2024-03-07 -- Python3 update
 #    2015-03-06 -- Adapted from emancoords2spiderdoc
 #
 # Spider Python Library
@@ -25,7 +26,7 @@ def backup(filename):
                 found_vacancy = 1
                 short_old = os.path.join(shortdir, os.path.basename(filename))
                 short_new = os.path.join(shortdir, os.path.basename(test_filename))
-                print 'Renamed', short_old, 'to', short_new
+                print('Renamed', short_old, 'to', short_new)
                 os.rename(filename, test_filename)
 
 if sys.argv[1:]:
@@ -41,39 +42,39 @@ if sys.argv[1:]:
         input = open(file,'r')
         listL = input.readlines()  # read line-by-line
         input.close()
-	dummy = 1
+        dummy = 1
 
-#	# EMAN x-coordinates are for the left side of the box
-#	# EMAN y-coordinates are for the bottom of the box FROM THE BOTTOM OF THE MICROGRAPH
-#	mic_y = micrograph.size[1]
+#        # EMAN x-coordinates are for the left side of the box
+#        # EMAN y-coordinates are for the bottom of the box FROM THE BOTTOM OF THE MICROGRAPH
+#        mic_y = micrograph.size[1]
 
         # read contents
         for line in listL:
-    	    key += 1
-	    split = line.split()
+            key += 1
+            split = line.split()
 
-	    xdim = float(split[2])
-	    ydim = float(split[3])
-	    xcoord = float(split[0])
-	    ycoord = float(split[1])
+            xdim = float(split[2])
+            ydim = float(split[3])
+            xcoord = float(split[0])
+            ycoord = float(split[1])
 
-	    xcenter = xcoord + xdim/2
-	    ycenter = ycoord + ydim/2
-#	    ycenter = mic_y - (ycoord + ydim/2)
+            xcenter = xcoord + xdim/2
+            ycenter = ycoord + ydim/2
+#            ycenter = mic_y - (ycoord + ydim/2)
 
             dictF[key] = [key,xcenter,ycenter,xcenter,ycenter,dummy]
 #           print filenum
-	
+
 #        headers = ['XCOORD','YCOORD','PARTICLE','PEAK_HT','XDIM','YDIM']
         headers = ['XCOORD','YCOORD','PARTICLE','PEAK_HT']
-	backup(outputdoc)
+        backup(outputdoc)
         if Spiderutils.writeSpiderDocFile(outputdoc,dictF, headers=headers, append=0):
-            print 'Wrote', key, 'keys to %s' % os.path.basename(outputdoc)
+            print('Wrote', key, 'keys to %s' % os.path.basename(outputdoc))
         else:
-            print "Error!", "Unable to write to %s" % os.path.basename(outputdoc)
+            print("Error!", "Unable to write to %s" % os.path.basename(outputdoc))
     else:
-        print "Error!", "Unable to read %s" % file
+        print("Error!", "Unable to read %s" % file)
 else:
-    print "syntax: emanrctcoords2spiderdoc.py input_eman_coords output_spider_doc"
+    print("syntax: emanrctcoords2spiderdoc.py input_eman_coords output_spider_doc")
 #    print "syntax: emancoords2spiderdoc.py input_eman_coords input_micrograph output_spider_doc"
 

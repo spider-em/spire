@@ -1,6 +1,10 @@
 #!/usr/bin/env python
 
-from   Tkinter import *
+# MODIFICATIONS:
+#    2024-03-07 -- arrows bound to previous and next frame
+#    2024-03-07 -- Python3 update
+
+from   tkinter import *
 from   PIL     import Image
 from   PIL     import ImageTk
 
@@ -13,7 +17,7 @@ class Viewer:
         self.index = 0
         #display first image
         if not os.path.exists(filename):
-            print "Unable to find %s" % filename
+            print("Unable to find %s" % filename)
             self.top.quit()
 
         labeltext = os.path.basename(filename)
@@ -22,8 +26,20 @@ class Viewer:
         self.im = im
         if im.format == "SPIDER":
             if im.istack != 0:
-                self.nimages = im.nimages
-                labeltext += " : stack file with %d images" % im.nimages
+                ###self.nimages = im.nimages
+                # PIL changed the structure of SpiderImageFile
+                if hasattr(im, 'nimages'):
+                    self.nimages = im.nimages
+                elif hasattr(im, '_nimages'):
+                    self.nimages = im._nimages
+                else:
+                    print(f"ERROR!! {type(im)} has neither type 'nimages' nor '_nimages'!")
+                    print()
+                    print(vars(im))
+                    print()
+                    print(f"  Exiting...\n")
+                    exit()
+                labeltext += " : stack file with %d images" % self.nimages
             bim = im.convert2byte()
         self.size = im.size
 
@@ -54,7 +70,11 @@ class Viewer:
         next = Button(fr, text="next", command=self.nextframe)
         next.grid(row=0, column=3, sticky="e", padx=4, pady=4)
 
-    def backframe(self):
+        # Bind arrows from previous and next
+        self.top.bind_all('<Right>', self.nextframe)
+        self.top.bind_all('<Left>', self.backframe)
+
+    def backframe(self, event=None):
         index = self.im.tell()
         index = index - 1  # back up one frame
         if index < 0:
@@ -63,7 +83,7 @@ class Viewer:
         self.evar.set(index+1)
         self.toframe()
 
-    def nextframe(self):
+    def nextframe(self, event=None):
         index = self.im.tell()
         index = index + 1  # forward one frame
         if index >= self.nimages:
@@ -88,7 +108,7 @@ class Viewer:
 if __name__ == "__main__":
 
     if not sys.argv[1:]:
-        print "Usage: viewstack.py stackfile"
+        print("Usage: viewstack.py stackfile")
         sys.exit()
     filename = sys.argv[1]
 

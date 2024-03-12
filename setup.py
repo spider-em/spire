@@ -8,33 +8,33 @@
 
 import               findprog
 import               os,sys, glob
-from commands import getoutput
+from subprocess import getoutput
 from shutil   import copy, copytree, rmtree
 
 #################################################################
 
-print "\n ----------------------------------------------"
+print("\n ----------------------------------------------")
 
 SPIRE_DIR    = os.getcwd()
 BIN_DIR      = os.path.join(SPIRE_DIR, "bin")
 CONFIG_DIR   = os.path.join(SPIRE_DIR, "config")
 BATCH_DIR    = os.path.join(SPIRE_DIR, "batchfiles")
 
-print " SPIRE_DIR:    %s" % (SPIRE_DIR)
-print " BIN_DIR:      %s" % (BIN_DIR)
-print " CONFIG_DIR:   %s" % (CONFIG_DIR)
-print " BATCH_DIR:    %s" % (BATCH_DIR)
+print(" SPIRE_DIR:    %s" % (SPIRE_DIR))
+print(" BIN_DIR:      %s" % (BIN_DIR))
+print(" CONFIG_DIR:   %s" % (CONFIG_DIR))
+print(" BATCH_DIR:    %s" % (BATCH_DIR))
 
 #################################################################
 
-print "\n ----------------------------------------------"
+print("\n ----------------------------------------------")
 
 # Get python executable 
 
 Pythonprog        = os.path.join(BIN_DIR, "python")
 #print " Pythonprog: %s" % Pythonprog
 if not os.path.exists(Pythonprog):
-    print " Unable to find executable python: %s" % Pythonprog
+    print(" Unable to find executable python: %s" % Pythonprog)
     sys.exit(1)
 
 #################################################################
@@ -46,32 +46,32 @@ pathlist  = findprog.findpath('spider')
 
 for cmd in pathlist:
     if findprog.testSpider(cmd):
-        print " %s can successfully run SPIDER" % (cmd)
+        print(" %s can successfully run SPIDER" % (cmd))
         spidercmd = cmd
         break
     
 if spidercmd != "":
-    print "\n Is this the correct command to run spider?: %s" % spidercmd
-print " Please enter the full path of the command to run SPIDER on this system,"
+    print("\n Is this the correct command to run spider?: %s" % spidercmd)
+print(" Please enter the full path of the command to run SPIDER on this system,")
 #print "e.g., the results of the Unix commands 'which spider' or 'alias spider'"
 
 if spidercmd != "":
-    print " or just hit Enter if the above command is acceptable"
-cmd = raw_input(" SPIDER command: ")
+    print(" or just hit Enter if the above command is acceptable")
+cmd = input(" SPIDER command: ")
 if cmd != "":
     spidercmd = cmd
 elif cmd == "" and spidercmd != "":
     cmd = spidercmd
 
 if findprog.testSpider(cmd):
-    print " %s can successfully run SPIDER" % (cmd)
+    print(" %s can successfully run SPIDER" % (cmd))
    
 
 ###################################################################
 
 # Put the <location> tag in the configuration files
 
-print "\n Writing <location> tags in configuration files"
+print("\n Writing <location> tags in configuration files")
 os.chdir(CONFIG_DIR)
 
 # For each config file XYZ.xml, if it finds a corresponding directory 
@@ -88,7 +88,7 @@ for config in configfiles:
     if basename == "simple2":    # A special case
         batchfiles = batchfiles[:-1]
     if os.path.exists(batchfiles):
-        print config
+        print(config)
         batchsrc = ["<location>" + batchfiles + "</location>\n"]
         newsrc2config(config, config, batchsrc)
 	
@@ -118,8 +118,8 @@ localtxt += "ssh_hosts = []" + "\n"
 fp = open(localvars,'w')
 fp.write(localtxt)
 fp.close()
-print localtxt
-print " Written to: %s" % localvars
+print(localtxt)
+print(" Written to: %s" % localvars)
 
 ###################################################################
 
@@ -151,8 +151,8 @@ if os.path.exists(prefs_file):
     fp.writelines(P)
     fp.close()
 
-print " " 
-print " Prefs_file: %s" % prefs_file
+print(" ") 
+print(" Prefs_file: %s" % prefs_file)
 
 
 ###################################################################
@@ -161,20 +161,20 @@ print " Prefs_file: %s" % prefs_file
 
 path = os.environ['PATH']
 if BIN_DIR in path:
-    print " Setup complete"    # Done
+    print(" Setup complete")    # Done
     sys.exit()
 
-print " Executables in: %s must be in your path." % (BIN_DIR)    
+print(" Executables in: %s must be in your path." % (BIN_DIR))    
 
 shell = os.environ['SHELL']
 if shell[-3:] == 'csh':
     cshrc = os.path.expanduser("~" + os.environ['USER'] + "/.cshrc")
-    print #cshrc
+    print() #cshrc
     if os.path.exists(cshrc):
-        print " The following line can be added to your .cshrc file:"
+        print(" The following line can be added to your .cshrc file:")
         newpath = " set path =(%s $path)" % BIN_DIR
-        print newpath
-        yn = raw_input(" Shall I add it for you? (y/n): ")
+        print(newpath)
+        yn = input(" Shall I add it for you? (y/n): ")
         yn = yn.lower()
         if yn == 'y' or yn == 'yes' or yn == 'Y':
             old_cshrc = cshrc + ".old"
@@ -183,18 +183,18 @@ if shell[-3:] == 'csh':
             fp.write("\n# added by SPIDER python tools installation %s\n" % date)
             fp.write(newpath + "\n")
             fp.close()
-            print " Installation complete. Type:"
-            print " source %s" % cshrc
-            print " to be able to run SPIDER python tools"
+            print(" Installation complete. Type:")
+            print(" source %s" % cshrc)
+            print(" to be able to run SPIDER python tools")
             
 elif shell[-4:] == 'bash':
     bashrc = os.path.expanduser("~" + os.environ['USER'] + "/.bashrc")
-    print #bashrc
+    print() #bashrc
     if os.path.exists(bashrc):
-        print " The following line can be added to your .bashrc file:"
+        print(" The following line can be added to your .bashrc file:")
         newpath = "export PATH=%s:$PATH" % BIN_DIR
-        print newpath
-        yn = raw_input(" Shall I add it for you? (y/n): ")
+        print(newpath)
+        yn = input(" Shall I add it for you? (y/n): ")
         yn = yn.lower()
         if yn == 'y' or yn == 'yes':
             old_bashrc = bashrc + ".old"
@@ -203,13 +203,13 @@ elif shell[-4:] == 'bash':
             fp.write("\n# added by SPIDER python tools installation %s \n" % date)
             fp.write(newpath + "\n")
             fp.close()
-            print " Installation complete. Type:"
-            print " source %s" % bashrc
-            print " to be able to run SPIDER python tools"
+            print(" Installation complete. Type:")
+            print(" source %s" % bashrc)
+            print(" to be able to run SPIDER python tools")
 
-print " " 
-print " Installation complete" 
-print " " 
+print(" ") 
+print(" Installation complete") 
+print(" ") 
 
 
 
