@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 import                os, sys
-from   tkinter import *
+from   Tkinter import *
 
 root = Tk()  # There are problems if this is not in the __main__ module
 import Spire.GB as GB
