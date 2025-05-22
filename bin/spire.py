@@ -1,6 +1,9 @@
 #!/usr/bin/env python
 import                os, sys
-from   tkinter import *
+if int(sys.version[0]) == 2:
+  from   Tkinter import Toplevel, Tk
+elif int(sys.version[0]) == 3:
+  from   tkinter import Toplevel, Tk
 
 root = Tk()  # There are problems if this is not in the __main__ module
 import Spire.GB as GB

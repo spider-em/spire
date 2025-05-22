@@ -1,20 +1,21 @@
 #!/bin/sh
 #
 # PURPOSE: Executable shell script that runs SPIDER's Spire and
-#          python tools using its own installed version of python 2.7
+#          python tools using its own installed version of python 3.6
 #
 
 SPIRE_EXE=`which spire`
-SPIRE_BIN_DIR=`dirname $SPIRE_EXE`
+SPIRE_BIN_DIR=$(realpath $(dirname $0) )
+# # # echo "SPIRE_BIN_DIR : '$SPIRE_BIN_DIR'" ; exit
 SPIRE_DIR=`dirname $SPIRE_BIN_DIR`
 
 #export LD_LIBRARY_PATH=$SPIRE_DIR/lib
 ###echo "LD_LIBRARY_PATH:" $LD_LIBRARY_PATH
 
-PYTHON_VERSION=3
-PYTHON="python$PYTHON_VERSION"
+PYTHON_VERSION=3.6
+PYTHON="python3"
 unset PYTHONHOME
-export PYTHONPATH=$SPIRE_DIR/lib/$PYTHON/site-packages
-###echo "PYTHONPATH:" $PYTHONPATH
+export PYTHONPATH=${SPIRE_DIR}/lib/python${PYTHON_VERSION}/site-packages
+# # # echo "PYTHONPATH : '$PYTHONPATH' " ; exit
 
 exec "$PYTHON" "$@"
