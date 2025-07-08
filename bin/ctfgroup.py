@@ -22,46 +22,18 @@ import re, os, sys
 import Pmw
 import pyplot
 
-from   math                import *
-from   Tkinter             import *
-from   tkMessageBox        import askokcancel
-from   tkFileDialog        import askopenfilename, asksaveasfilename
-from   commands            import getoutput
+import math  #### from   math                import *
+import tkinter #### from   tkinter             import *
+###from   subprocess            import getoutput
 
-from   Spider.Spiderutils  import *
+from Spider import Spiderutils  #### from   Spider.Spiderutils  import *
 
-re_nums = re.compile('\d+\D')  # integers followed by one non-int char
-
-"""
-def name2template(file):
-    " given 'mic021.dat' --> returns mic***.dat "
-    if len(file) == 0: return
-
-    m = re_nums.findall(file)  # m = ['021.']
-    if len(m) < 1:
-        return
-    numstr = m[-1]  # if > 1, use last (rightmost) number
-        
-    stars = "*" * (len(numstr) - 1)
-    stars += "."
-    a = file.find(numstr)  # find index
-    tmp = file.replace(numstr,stars,1)
-    return tmp
-
-def template2filename(template, n):
-    " given (pic***.dat, 3) --> returns pic003.dat "
-    nstars = template.count("*")
-    strn = str(n)
-    numstr = strn.zfill(nstars)
-    sts = "*" * nstars
-    filename = template.replace(sts,numstr)
-    return filename
-"""
+re_nums = re.compile(r'\d+\D')  # integers followed by one non-int char
 
 # returns "" if user hits 'cancel'
 def askfilename(title='Select a file'):
     " if you hit 'cancel', askopenfilename returns an empty tuple "
-    f = askopenfilename(title=title)
+    f = tkinter.filedialog.askopenfilename(title=title)
     if len(f) == 0:
         return ""
     else:
@@ -69,7 +41,7 @@ def askfilename(title='Select a file'):
         return f
     
 def asksavefilename():
-    f = asksaveasfilename()
+    f = tkinter.filedialog.asksaveasfilename()
     if len(f) == 0:
         return ""
     else:
@@ -98,11 +70,11 @@ class scatter:
     def __init__(self, master, filename=None, xcol=None, ycol=None, plotfilelist=None):
         self.top = master
 
-        self.xcolumn = IntVar()
-        self.ycolumn = IntVar()
-        self.xaxisVar = StringVar()
+        self.xcolumn = tkinter.IntVar()
+        self.ycolumn = tkinter.IntVar()
+        self.xaxisVar = tkinter.StringVar()
         self.xaxisVar.set("defocus")
-        self.yaxisVar = StringVar()
+        self.yaxisVar = tkinter.StringVar()
         self.yaxisVar.set("micrographs")
         self.filename = ""
         self.D = {}
@@ -113,7 +85,7 @@ class scatter:
         self.x1 = 0
         self.y1 = 0
         self.dragging = 0
-        self.eVar1 = StringVar()
+        self.eVar1 = tkinter.StringVar()
         self.emptycolor = getcolor(0)
         self.framecolor = '#aaaaee'
         self.gmax = 0
@@ -139,22 +111,22 @@ class scatter:
             if res == -1:
                 sys.exit()
 
-        keys = self.D.keys()
+        keys = list(self.D.keys())
         keys.sort()
 
-        self.Dkeys = self.D.keys()
+        self.Dkeys = list(self.D.keys())
         self.Dkeys.sort()
         self.nkeys = len(self.Dkeys)
 
-        self.oldvalue = StringVar()
+        self.oldvalue = tkinter.StringVar()
         self.oldvalue.set("")
 
         # plotting
         if plotfilelist != None and len(plotfilelist) > 0:
-            self.plotfiletemplate = name2template(plotfilelist[0])
+            self.plotfiletemplate = Spiderutils.name2template(plotfilelist[0])
         else:
             self.plotfiletemplate = "power/ctf***" + self.ext
-        self.plotfile = StringVar()
+        self.plotfile = tkinter.StringVar()
         self.plotfile.set(self.plotfiletemplate)
         self.gnuplot = ""
 
@@ -162,7 +134,7 @@ class scatter:
 
         self.makeMenus(master)
 
-        fg = Frame(master)
+        fg = tkinter.Frame(master)
         fg.pack(side='top', fill='both', expand=1)
         
         #self.g = Pmw.Blt.Graph(fg, plotbackground="black", takefocus=1) 
@@ -180,7 +152,7 @@ class scatter:
         self.g.pack(side='top', fill='both', expand=1)
 
         # put micrograph & defocus entries in bottom of main window
-        fe = Frame(fg)
+        fe = tkinter.Frame(fg)
         fe.pack(side='bottom', fill='x')
         self.micEntry = Pmw.EntryField(fe, labelpos='w', label_text='micrograph')
         self.micEntry.component('entry').configure(width=5)
@@ -190,14 +162,14 @@ class scatter:
         self.defEntry.pack(side='right', padx=4)
        
         # bottom frame
-        fb = Frame(master, relief='raised', borderwidth=2,
+        fb = tkinter.Frame(master, relief='raised', borderwidth=2,
                    background=self.framecolor)
         fb.pack(side='top', fill='x')
         
         # entry for plotfiles
-        self.plotEntry = Entry(fb, textvariable=self.plotfile)
+        self.plotEntry = tkinter.Entry(fb, textvariable=self.plotfile)
         self.plotEntry.pack(side='right', pady=4)
-        bpf = Button(fb, text="plot files:", command=self.getplotfiles)
+        bpf = tkinter.Button(fb, text="plot files:", command=self.getplotfiles)
         bpf.pack(side='right', pady=4) 
 
         self.putsymbols()
@@ -207,15 +179,15 @@ class scatter:
 
     def makeMenus(self,master):
         brelief = 'flat'
-        self.mBar = Frame(master, relief='raised', borderwidth=2,
+        self.mBar = tkinter.Frame(master, relief='raised', borderwidth=2,
                           background=self.framecolor)        
         self.mBar.pack(side='top',fill = 'x')
 
         # Make the File menu 
-        File_button = Menubutton(self.mBar, text='File', underline=0,
+        File_button = tkinter.Menubutton(self.mBar, text='File', underline=0,
                                  relief=brelief, background=self.framecolor)
         File_button.pack(side='left', padx=5, pady=5)
-        File_button.menu = Menu(File_button, tearoff=0)
+        File_button.menu = tkinter.Menu(File_button, tearoff=0)
         File_button['menu'] = File_button.menu
 
         File_button.menu.add_command(label='Save as', underline=0,
@@ -227,15 +199,15 @@ class scatter:
         File_button.menu.add_command(label='Quit', underline=0,
                                      command=master.quit)
         # Symbol menu
-        Sym_button = Menubutton(self.mBar, text='Symbols', underline=0,
+        Sym_button = tkinter.Menubutton(self.mBar, text='Symbols', underline=0,
                                  relief=brelief, background=self.framecolor)
         Sym_button.pack(side='left', padx=5, pady=5)
-        Sym_button.menu = Menu(Sym_button, tearoff=0)
+        Sym_button.menu = tkinter.Menu(Sym_button, tearoff=0)
         Sym_button['menu'] = Sym_button.menu
 
         # the Symbol --> Shape submenu
-        Sym_button.menu.shapes = Menu(Sym_button.menu, tearoff=0)
-        self.shapeVar = IntVar()
+        Sym_button.menu.shapes = tkinter.Menu(Sym_button.menu, tearoff=0)
+        self.shapeVar = tkinter.IntVar()
         if self.symbolshape in self.shapes:
             snum = self.shapes.index(self.symbolshape)
             self.shapeVar.set(snum)
@@ -250,8 +222,8 @@ class scatter:
         Sym_button.menu.add_cascade(label='Shapes', menu=Sym_button.menu.shapes)
 
         # the Symbol --> Size submenu
-        Sym_button.menu.sizes = Menu(Sym_button.menu, tearoff=0)
-        self.sizeVar = IntVar()
+        Sym_button.menu.sizes = tkinter.Menu(Sym_button.menu, tearoff=0)
+        self.sizeVar = tkinter.IntVar()
         if self.symbolsize in self.symbolsizes:
             snum = self.symbolsizes.index(self.symbolsize)
             self.sizeVar.set(snum)
@@ -269,17 +241,17 @@ class scatter:
                                     command=self.cleargroups)
 
         # put help menu on the right
-        Help_button = Menubutton(self.mBar, text='Help', underline=0,
+        Help_button = tkinter.Menubutton(self.mBar, text='Help', underline=0,
                                  relief=brelief, background=self.framecolor)
         Help_button.pack(side='right', padx=5, pady=5)
-        Help_button.menu = Menu(Help_button, tearoff=0)
+        Help_button.menu = tkinter.Menu(Help_button, tearoff=0)
         Help_button['menu'] = Help_button.menu
 
         Help_button.menu.add_command(label='Help', underline=0,
                                      command=self.help)
 
     def cleargroups(self):
-        keys = self.D.keys()
+        keys = list(self.D.keys())
         keys.sort()
         # D[k] = (x, y, group, color, mic)
         for k in keys:
@@ -296,7 +268,7 @@ class scatter:
         if self.symbolshape == 'numbers':
             self.puttextsymbols()
             return
-        keys = self.D.keys()
+        keys = list(self.D.keys())
         for k in keys:
             mk = str(k)
             currentshape = self.symbolshape,
@@ -333,7 +305,7 @@ class scatter:
             """
 
     def puttextsymbols(self):
-        keys = self.D.keys()
+        keys = list(self.D.keys())
         for k in keys:
             mk = str(k)
             #currentshape = self.symbolshape,
@@ -384,7 +356,7 @@ class scatter:
             self.defEntry.setentry(defocus)
             self.g.marker_configure(mk, outline=self.activecolor) #foreground=self.activecolor)
         else:
-            print "element %s not found" % str(mic)
+            print("element %s not found" % str(mic))
             return
 
     def leavemarker(self, mk):
@@ -395,7 +367,7 @@ class scatter:
             self.g.marker_configure(mk, outline=color)
 
     def showactivemarkers(self, markers):
-        keys = self.D.keys()
+        keys = list(self.D.keys())
         for k in keys:
             mk = str(k)
             color = self.D[k][3]
@@ -453,7 +425,7 @@ class scatter:
             item = self.D[k]
             if item[2] == groupno:
                 mic = self.D[k][4]
-                fn = makeSpiderFilename(self.plotfiletemplate, mic)
+                fn = Spiderutils.makeSpiderFilename(self.plotfiletemplate, mic)
                 group.append(fn)
                 mk = str(k)
                 
@@ -466,7 +438,7 @@ class scatter:
             hasplot = 1
 
         if not hasplot:
-            self.gnuplotwin = Toplevel(self.top)
+            self.gnuplotwin = tkinter.Toplevel(self.top)
             self.gnuplot = pyplot.MyGnuplotPlot(self.gnuplotwin,group)
             self.gnuplot.set_columns("1:5")
             self.gnuplot.selectAll()
@@ -487,7 +459,7 @@ class scatter:
         cwd = cwd.replace("/tmp_mnt","")
         file = file.replace(cwd,"")
         
-        filetmp = name2template(file)
+        filetmp = Spiderutils.name2template(file)
         self.plotfile.set(filetmp)
 
     # Mouse functions for selection -----------
@@ -508,7 +480,7 @@ class scatter:
             self.g.unbind(sequence="<Motion>")
             self.g.marker_delete("marking rectangle")
             
-            if x0 <> x1 and y0 <> y1:
+            if x0 != x1 and y0 != y1:
 
                 # make sure the coordinates are sorted
                 if x0 > x1: x0, x1 = x1, x0
@@ -522,7 +494,7 @@ class scatter:
                 group = []
 
                 for y in range(y0,y1+1):
-                    if self.D.has_key(y):
+                    if y in self.D:
                         defocus = int(self.D[y][0])
                         if defocus >= x0 and defocus <= x1:
                             group.append( [y, defocus] )
@@ -548,15 +520,15 @@ class scatter:
         # i.e., if it has group column, use it
         if filename == None: return -1
         if not os.path.exists(filename):
-            print "unable to find %s" % filename
+            print("unable to find %s" % filename)
             return -1
 
-        n_cols = numberOfColumns(filename)
+        n_cols = Spiderutils.numberOfColumns(filename)
         if n_cols < 2:
-            print "doc files must have at least 2 columns: micrographs, defocus"
+            print("doc files must have at least 2 columns: micrographs, defocus")
             return -1
 
-        K,M,D = readdoc(filename, column=[0,1,2])  # keys,micrographs,defocus
+        K,M,D = Spiderutils.readdoc(filename, column=[0,1,2])  # keys,micrographs,defocus
 
         maxdiff = 800  # maximum range of defocus in a group
 
@@ -565,7 +537,7 @@ class scatter:
             B = def_sort(M,D,maxdiff)
             
         elif n_cols > 2:
-            G = readdoc(filename, column=3)  # group
+            G = Spiderutils.readdoc(filename, column=3)  # group
             
             if not self.isDefGroup(G):
                 # 'group' numbers not valid, call def_sort
@@ -601,16 +573,16 @@ class scatter:
             color = getcolor(group)
             if group > self.gmax:
                 self.gmax = group
-            if self.D.has_key(y):
-                print "Error: Y axis numbers must be unique: %s" % y
+            if y in self.D:
+                print("Error: Y axis numbers must be unique: %s" % y)
             # use the yaxis as the keys. NUMBERS MUST BE UNIQUE
             self.D[y] = [x, y, group, color, mic] 
             X.append(x)
             Y.append(y)
 
-        keys = self.D.keys()
+        keys = list(self.D.keys())
         if len(keys) < 1:
-            print "unable to get data from %s" % filename
+            print("unable to get data from %s" % filename)
             return -1
 
         extra_x = int((max(X) - min(X)) * 0.05)
@@ -624,7 +596,7 @@ class scatter:
         " defocus group numbers must be positive ints <= len(G) "
         n = len(G)
         for i in G:
-            if i > 0 and isInt(i) and i <= n:
+            if i > 0 and isinstance(i, int) and i <= n:
                 pass
             else:
                 return 0
@@ -654,13 +626,13 @@ class scatter:
     def savefile(self):
         hdrstring = " ; /     MICROGRAPH   DEFOCUS    DEF.GROUP\n"
         groups = []
-        keys = self.D.keys()
+        keys = list(self.D.keys())
         keys.sort()
         for k in keys:
             groups.append(int(self.D[k][2]))
             
         if min(groups) < 1:
-            if not askokcancel('Warning', 'Not all micrographs have been assigned!'):
+            if not tkinter.messagebox.askokcancel('Warning', 'Not all micrographs have been assigned!'):
                 return
         outfile = asksavefilename()
         if len(outfile) == 0:
@@ -673,11 +645,11 @@ class scatter:
             
         for k in keys:
             defocus = self.D[k][0]
-            group   = int(self.D[k][2])
+            ###group   = int(self.D[k][2])
             mic     = int(self.D[k][4])
             n = newgroups[i]
             i += 1
-            #print " %3d 3   %6d       %s       %6d %6d" % (k,mic,defocus,group,n)
+            ###print " %3d 3   %6d       %s       %6d %6d" % (k,mic,defocus,group,n)
             line = " %3d 3   %6d       %s       %6d\n" % (k,mic,defocus,n)
             lines.append(line)
 
@@ -689,16 +661,16 @@ class scatter:
         pass
 
     def help(self):
-        w = Toplevel(self.top)
+        w = tkinter.Toplevel(self.top)
         s1 = "Drag Left mouse button to group \ntogether points of similar defocus"
         s2 = "Right mouse button: plot all files in a group"
         #s3 = "file://localhost/net/bali/usr1/spider/docs/spire/guitools/defgroup.html"
-        #e = StringVar()
+        #e = tkinter.StringVar()
         #e.set(s3)
-        Label(w, text=s1).pack(side='top', anchor='w', fill='x',padx=2,pady=2)
-        Label(w, text=s2).pack(side='top', anchor='w', fill='x',padx=2,pady=2)
+        tkinter.Label(w, text=s1).pack(side='top', anchor='w', fill='x',padx=2,pady=2)
+        tkinter.Label(w, text=s2).pack(side='top', anchor='w', fill='x',padx=2,pady=2)
         #Entry(w, textvariable=e).pack(side='top', anchor='w', fill='x')
-        Button(w, text='Ok', command=w.destroy).pack(side='bottom', pady=5)
+        tkinter.Button(w, text='Ok', command=w.destroy).pack(side='bottom', pady=5)
 
     # stuff added for showing the defocus spread -----------------------
 
@@ -720,7 +692,7 @@ class scatter:
             F.append(y)
 
         if not hasattr(self, 'dfspread'):       
-            self.dfspread = Canvas(self.g, width=wd, height=ht, background='white')
+            self.dfspread = tkinter.Canvas(self.g, width=wd, height=ht, background='white')
             self.g.marker_create("window", name="dfspreadWindow")
             #cx,cy = self.g.extents("leftmargin"), self.g.extents("topmargin")
             self.g.marker_configure("dfspreadWindow",
@@ -751,12 +723,12 @@ class scatter:
         cs    = 1e7 * float(self.cs.get())
         kv = float(self.kev.get())
         if kv != 0:
-            lmbda = 12.398 / sqrt(kv* (1022+kv))
+            lmbda = 12.398 / math.sqrt(kv* (1022+kv))
         else:
             lmbda = self.infinity
         if cs != 0:
-            f1    = 1.0 / sqrt(cs*lmbda)
-            f2    = sqrt(sqrt(cs*lmbda**3))
+            f1    = 1.0 / math.sqrt(cs*lmbda)
+            f2    = math.sqrt(math.sqrt(cs*lmbda**3))
         else:
             f1 = self.infinity
             f2 = self.infinity
@@ -773,19 +745,19 @@ class scatter:
         else:
             env = self.infinity
         env1  = env/f2**2
-        f     = -pi**2
+        f     = -math.pi**2
         ds1   = f1 * float(defspread)
         kappa = ds1 * self.kappa
         dz1   = f1 * float(defocus)
 
-        acr = float(self.acr.get())
+        ###acr = float(self.acr.get())
         squared = 1  # self.squared.get()
 
         for i in range(self.ndefspread_points):
             ak = i * dk
             p  = ak**3 - dz1 * ak
-            ch = exp(ak**4 * kappa)
-            self.Envelope[i] = (exp(f*q1*p**2)*ch)*2*exp(-env1*ak**2)
+            ch = math.exp(ak**4 * kappa)
+            self.Envelope[i] = (math.exp(f*q1*p**2)*ch)*2*math.exp(-env1*ak**2)
             #qqt = 2.0*pi*(0.25*ak**4 - 0.5*dz1*ak**2)
             #qqt1 = (1.0-acr)*sin(qqt)-acr*cos(qqt)
             #self.Y[i] = self.E[i] * qqt1
@@ -796,38 +768,38 @@ class scatter:
 
     def getParams(self):
         # present a form to the user to get ctf parameters
-        self.cs = StringVar()
+        self.cs = tkinter.StringVar()
         self.cs.set('2.0')
-        self.kev = StringVar()
+        self.kev = tkinter.StringVar()
         self.kev.set('200')
-        self.pixsize = StringVar()
+        self.pixsize = tkinter.StringVar()
         self.pixsize.set('2.82')
-        self.srcsize = StringVar()
+        self.srcsize = tkinter.StringVar()
         self.srcsize.set('0.0')
-        self.acr = StringVar()
+        self.acr = tkinter.StringVar()
         self.acr.set('0.1')
-        self.gep = StringVar()
+        self.gep = tkinter.StringVar()
         self.gep.set('1000')
         self.infinity = 1e50
-        self.kappa = -pi**2 / (16.0 * log(2.0))
+        self.kappa = -math.pi**2 / (16.0 * math.log(2.0))
         self.ndefspread_points = 250
         self.Envelope = []
         for i in range(self.ndefspread_points):
             self.Envelope.append(0)
         self.showDefocusSpread = 1
 
-        pwin = Toplevel(self.top)
-        fr1 = Frame(pwin)
-        cslabel = Label(fr1,text="Cs:")
-        csentry = Entry(fr1, textvariable=self.cs, background='white')
-        kvlabel = Label(fr1,text="keV:")
-        kventry = Entry(fr1, textvariable=self.kev, background='white')
-        pixlabel = Label(fr1,text="pixel size:")
-        pixentry = Entry(fr1, textvariable=self.pixsize, background='white')
-        srclabel = Label(fr1,text="source size:")
-        srcentry = Entry(fr1, textvariable=self.srcsize, background='white')
-        acrlabel = Label(fr1,text="amplitude contrast ratio:")
-        acrentry = Entry(fr1, textvariable=self.acr, background='white')
+        pwin = tkinter.Toplevel(self.top)
+        fr1 = tkinter.Frame(pwin)
+        cslabel = tkinter.Label(fr1,text="Cs:")
+        csentry = tkinter.Entry(fr1, textvariable=self.cs, background='white')
+        kvlabel = tkinter.Label(fr1,text="keV:")
+        kventry = tkinter.Entry(fr1, textvariable=self.kev, background='white')
+        pixlabel = tkinter.Label(fr1,text="pixel size:")
+        pixentry = tkinter.Entry(fr1, textvariable=self.pixsize, background='white')
+        srclabel = tkinter.Label(fr1,text="source size:")
+        srcentry = tkinter.Entry(fr1, textvariable=self.srcsize, background='white')
+        acrlabel = tkinter.Label(fr1,text="amplitude contrast ratio:")
+        acrentry = tkinter.Entry(fr1, textvariable=self.acr, background='white')
 
         cslabel.grid(row=0, column=0, sticky='e')
         csentry.grid(row=0, column=1) #, sticky='e')
@@ -841,13 +813,13 @@ class scatter:
         acrentry.grid(row=4, column=1) #, sticky='e')
         fr1.pack(side='top')
 
-        fr2 = Frame(pwin)
-        Button(fr2, text='Done', command=pwin.destroy).pack()
+        fr2 = tkinter.Frame(pwin)
+        tkinter.Button(fr2, text='Done', command=pwin.destroy).pack()
         fr2.pack(side='top')
 
     
 def printHelp():
-    print "Usage: ctfgroup.py -d doc_sort.dat ctfplotfiles*"
+    print("Usage: ctfgroup.py -d doc_sort.dat ctfplotfiles*")
 
 # sort the defocus data   
 def def_sort(Micro, Defocus, maxdiff=1000):
@@ -887,7 +859,7 @@ def def_sort(Micro, Defocus, maxdiff=1000):
 # Usage: ctfgroup.py -d def_sort.dat ctf*
 
 if __name__ == '__main__':
-    master = Tk()
+    master = tkinter.Tk()
     args = sys.argv[1:]
     numargs = len(args)
     smallfont = 0
@@ -916,13 +888,12 @@ if __name__ == '__main__':
                 plotfiles.append(args[0])
                 args = args[1:]
 
-                
     if defsortfile == "":
         # Use the first plot file as the def_sort file
         defsortfile = plotfiles[0]
         plotfiles = plotfiles[1:]
         if not os.path.exists(defsortfile):
-            print "cannot find defsort file %s" % defsortfile
+            print("cannot find defsort file %s" % defsortfile)
             sys.exit()
 
     if not smallfont:

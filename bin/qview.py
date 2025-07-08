@@ -25,22 +25,21 @@ qview.py -s image.dat
 """
 
 import                 os, sys, threading
-import                 time
-from   socket          import *
+###import                 time
+import socket  #### from   socket.          import *
 
 ###from   Spider          import *
 from   Spider          import SpiderImageSeries
-from   Spider          import SpiderImagePlugin #2018 al          
+###from   Spider          import SpiderImagePlugin #2018 al
 
 #from   tkinter               import *
-from   tkinter               import Tk, Label
+import tkinter
 from   tkinter.messagebox    import askyesno
 
-import                 Pmw                                            
+###import                 Pmw
 
-from   PIL             import ImageTk
-from   PIL             import Image
-
+import PIL
+from   PIL             import ImageTk  # for some reason, PIL.ImageTk doesn't work
 
 #print '\n'.join(sys.path)                             
 
@@ -64,7 +63,7 @@ class Server(threading.Thread):
 
     def run(self):
         # Start the server
-        self.sockobj = socket(AF_INET, SOCK_STREAM)  
+        self.sockobj = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.sockobj.bind((self.host, self.port))   
         self.sockobj.listen(5)
 
@@ -77,7 +76,7 @@ class Server(threading.Thread):
                 if not data: break
                 data = data.strip()
                 if data == EXIT:
-                    quitflag = 1
+                    self.quitflag = 1
                 else:
                     self.connection.send('qview.py: ' + data) 
                     self.gui.addImage(data)
@@ -127,10 +126,10 @@ class QuickWindow:
         self.min = 0
         self.max = len(list(self.IM.keys())) - 1
 
-        self.filelabel = Label(self.top, text="")
+        self.filelabel = tkinter.Label(self.top, text="")
         self.filelabel.pack(side='top', expand=1, fill='x')
 
-        self.label = Label(self.top, bd=bw)
+        self.label = tkinter.Label(self.top, bd=bw)
         self.label.pack(side='top', expand=1, fill='both')
         
         self.current = self.min
@@ -150,7 +149,7 @@ class QuickWindow:
 
     def filename2image(self, filename): 
         try:
-            im = Image.open(filename)
+            im = PIL.Image.open(filename)
             im.info['filename'] = os.path.basename(filename)
             return im
         except:
@@ -231,7 +230,7 @@ class QuickWindow:
 
 
 def findServer():
-    sockobj = socket(AF_INET, SOCK_STREAM)      # Make a TCP/IP socket object
+    sockobj = socket.socket(socket.AF_INET, socket.SOCK_STREAM)      # Make a TCP/IP socket object
     try:
         sockobj.connect((serverHost, serverPort)) # Connect to server machine,port
         return sockobj
@@ -286,8 +285,6 @@ def processargs(args):
             
     return (serverflag, filenames, cwd)
 
-
-
 def loadimages(filelist, directory=None):
     " Check if files can be loaded by Image. Return list of images. "
     if directory != None:
@@ -301,7 +298,6 @@ def loadimages(filelist, directory=None):
 
     return imlist
     
-
 #===================================================================
 if __name__ == '__main__':
 
@@ -328,17 +324,13 @@ if __name__ == '__main__':
 
     # No server: just start up image window
     if serverflag == 0 :
-	#print("qview,              Calling loadimages: %s") %filelist  #!!!!!!!!!!!!!
-        ###print(f"{os.path.basename(__file__)}:332: SpiderImagePlugin: {SpiderImagePlugin.__file__}")
         imglist = loadimages(filelist, directory=cwd)
-	#print("qview,              After loadimages")                  #!!!!!!!!!!!!!
 
         if len(imglist) < 1:
             sys.exit()
-        root = Tk()
+        root = tkinter.Tk()
         qw   = QuickWindow(root, imglist=imglist, useserver=0)
         root.mainloop()
-
 
     # -s = 'use same window' or 'use server'
     else:
