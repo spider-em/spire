@@ -24,24 +24,23 @@ qview.py -s image.dat
       See echo-client.py, echo-server.py in Programming Python p 526 ff
 """
 
-import                 os, sys, threading
-###import                 time
-import socket  #### from   socket.          import *
+import os, sys, threading
+import socket
 
-###from   Spider          import *
-from   Spider          import SpiderImageSeries
-###from   Spider          import SpiderImagePlugin #2018 al
+from   Spider  import SpiderImageSeries
 
-#from   tkinter               import *
 import tkinter
-from   tkinter.messagebox    import askyesno
+from   tkinter import messagebox
 
-###import                 Pmw
+try:
+    import PIL
+except ImportError as e:
+    print(f"\nERROR!! {e}")
+    print(f  "  Please install 'pillow' using conda or pip")
+    print(   "  Exiting...\n")
+    exit()
 
-import PIL
-from   PIL             import ImageTk  # for some reason, PIL.ImageTk doesn't work
-
-#print '\n'.join(sys.path)                             
+from   PIL     import ImageTk  # for some reason, PIL.ImageTk doesn't work
 
 serverHost = 'localhost'
 serverPort = 50527
@@ -164,7 +163,7 @@ class QuickWindow:
         if w > self.screenx or h > self.screeny:
             askmsg = "%s is %d by %d pixels!" % (filename, w, h)
             askmsg = askmsg + "\nAre you sure you want to display it?"
-            if not askyesno("Warning!", askmsg):
+            if not messagebox.askyesno("Warning!", askmsg):
                 self.displaynext()
                 return
                 
@@ -290,11 +289,7 @@ def loadimages(filelist, directory=None):
     if directory != None:
         os.chdir(directory)
 	
-    #print("qview.loadimages,               Calling SpiderImageSeries.loadImageSeries")  #!!!!!!!!
-
     imlist = SpiderImageSeries.loadImageSeries(filelist, DISPLAY_ALL=1)
-
-    #print("qview.loadimages,               After SpiderImageSeries.loadImageSeries")    #!!!!!!!!
 
     return imlist
     

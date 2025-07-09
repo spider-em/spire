@@ -11,12 +11,19 @@
 import Pmw
 import os,sys
 
-import PIL
-from   PIL             import ImageTk  # for some reason, PIL.ImageTk doesn't work
-import tkinter  #### from   tkinter             import *
-from   tkinter             import filedialog, messagebox
+try:
+    import PIL
+except ImportError as e:
+    print(f"\nERROR!! {e}")
+    print(f  "  Please install 'pillow' using conda or pip")
+    print(   "  Exiting...\n")
+    exit()
+
+from   PIL     import ImageTk  # for some reason, PIL.ImageTk doesn't work
+import tkinter
+from   tkinter import filedialog, messagebox
 import math
-from Spider import SpiderImageSeries, Spiderutils  #### import Spider
+from Spider    import SpiderImageSeries, Spiderutils  #### import Spider
 
 class selectionClass:
     def __init__(self, value, key, color, label, activecolor=None):
