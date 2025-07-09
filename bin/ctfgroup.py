@@ -21,12 +21,12 @@
 import re, os, sys
 import Pmw
 import pyplot
+import math
+import tkinter
+#from matplotlib import figure
+#from matplotlib.backends import backend_tkagg
 
-import math  #### from   math                import *
-import tkinter #### from   tkinter             import *
-###from   subprocess            import getoutput
-
-from Spider import Spiderutils  #### from   Spider.Spiderutils  import *
+from Spider import Spiderutils
 
 re_nums = re.compile(r'\d+\D')  # integers followed by one non-int char
 
@@ -67,6 +67,38 @@ def getcolor(i):
 #
 
 class scatter:
+    """
+    Functions:
+        Display:
+          makeMenus
+          cleargroups
+          getsymbolshape
+          putsymbols
+          puttextsymbols
+          entermarker
+          leavemarker
+          showactivemarkers
+          assigngroups
+          plotgroup
+          getplotfiles
+        Mouse:
+          mouseDrag
+          mouseUp
+          mouseDown
+        File I/O:
+          getdata
+          isDefGroup
+          remap
+          savefile
+          openfile
+          help
+          displayDefocusSpread
+          computeEnvelope
+          getParams
+          printHelp
+          def_sort
+    """
+
     def __init__(self, master, filename=None, xcol=None, ycol=None, plotfilelist=None):
         self.top = master
 
@@ -140,6 +172,7 @@ class scatter:
         #self.g = Pmw.Blt.Graph(fg, plotbackground="black", takefocus=1) 
         self.g = Pmw.Blt.Graph(fg, takefocus=1)
         self.g.grid_on()
+
         # use an invisible line to set the plot window size
         self.g.line_create("scatter", xdata=self.vx, ydata=self.vy,
                            linewidth=0, symbol='')
@@ -356,7 +389,7 @@ class scatter:
             self.defEntry.setentry(defocus)
             self.g.marker_configure(mk, outline=self.activecolor) #foreground=self.activecolor)
         else:
-            print("element %s not found" % str(mic))
+            print(("element %s not found" % str(mic)))
             return
 
     def leavemarker(self, mk):
@@ -384,7 +417,6 @@ class scatter:
                 elif self.g.marker_exists(mk):
                     self.g.marker_configure(mk, foreground=color)
  
-
     def assigngroups(self):
         #print self.D
         groups = []
@@ -520,7 +552,7 @@ class scatter:
         # i.e., if it has group column, use it
         if filename == None: return -1
         if not os.path.exists(filename):
-            print("unable to find %s" % filename)
+            print(("unable to find %s" % filename))
             return -1
 
         n_cols = Spiderutils.numberOfColumns(filename)
@@ -574,7 +606,7 @@ class scatter:
             if group > self.gmax:
                 self.gmax = group
             if y in self.D:
-                print("Error: Y axis numbers must be unique: %s" % y)
+                print(("Error: Y axis numbers must be unique: %s" % y))
             # use the yaxis as the keys. NUMBERS MUST BE UNIQUE
             self.D[y] = [x, y, group, color, mic] 
             X.append(x)
@@ -582,7 +614,7 @@ class scatter:
 
         keys = list(self.D.keys())
         if len(keys) < 1:
-            print("unable to get data from %s" % filename)
+            print(("unable to get data from %s" % filename))
             return -1
 
         extra_x = int((max(X) - min(X)) * 0.05)
@@ -893,7 +925,7 @@ if __name__ == '__main__':
         defsortfile = plotfiles[0]
         plotfiles = plotfiles[1:]
         if not os.path.exists(defsortfile):
-            print("cannot find defsort file %s" % defsortfile)
+            print(("cannot find defsort file %s" % defsortfile))
             sys.exit()
 
     if not smallfont:

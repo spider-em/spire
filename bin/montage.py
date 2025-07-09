@@ -15,13 +15,13 @@ try:
     import PIL
 except ImportError as e:
     print(f"\nERROR!! {e}")
-    print(f  "  Please install 'pillow' using conda or pip")
+    print(  f"  Please install 'pillow' using conda or pip")
     print(   "  Exiting...\n")
     exit()
 
 from   PIL     import ImageTk  # for some reason, PIL.ImageTk doesn't work
 import tkinter
-from   tkinter import filedialog, messagebox
+from   tkinter import filedialog, messagebox, font
 import math
 from Spider    import SpiderImageSeries, Spiderutils  #### import Spider
 
@@ -117,6 +117,7 @@ class montage:
         else:
             self.ncol = ncol
             
+        self.font = font.Font(family="mincho", size=12)
         self.startkey = tkinter.StringVar()
         self.startkey.set(startkey)
         
@@ -163,47 +164,48 @@ class montage:
         self.balloon = Pmw.Balloon(self.top)
 
         # Make the Display menu
-        Dspbtn = tkinter.Menubutton(self.mBar, text='Display', relief='flat')
+        Dspbtn = tkinter.Menubutton(self.mBar, text='Display', relief='flat', font=self.font)
+        ###import inspect; print(f"{os.path.splitext( os.path.basename(__file__) )[0]}:169:\t{inspect.stack()[0][3]}() :\tDspbtn.cget('font') = '{Dspbtn.cget('font')}'")
         Dspbtn.pack(side=tkinter.LEFT, padx=5, pady=5)
         Dspbtn.menu = tkinter.Menu(Dspbtn, tearoff=0)
 
         Dspbtn.menu.add_command(label='no. columns', underline=0,
-                                    command=self.displayParms)
+                                    command=self.displayParms, font=self.font)
         Dspbtn.menu.add_checkbutton(label='show filenames', underline=0,
                                     variable=self.showVar,
-                                    command=self.displayParms_1)
+                                    command=self.displayParms_1, font=self.font)
 
         # 'size' has a submenu of checkbuttons
         Dspbtn.menu.sizes = tkinter.Menu(Dspbtn.menu, tearoff=0)
         Dspbtn.menu.sizes.add_radiobutton(label='1/2', underline=0,
                                           variable=self.sizeVar, value=0,
-                                          command=self.displayParms_2)
+                                          command=self.displayParms_2, font=self.font)
         Dspbtn.menu.sizes.add_radiobutton(label='1x', underline=0,
                                           variable=self.sizeVar, value=1,
-                                          command=self.displayParms_2)
+                                          command=self.displayParms_2, font=self.font)
         Dspbtn.menu.sizes.add_radiobutton(label='2x', underline=0,
                                           variable=self.sizeVar, value=2,
-                                          command=self.displayParms_2)
-        Dspbtn.menu.add_cascade(label='image size', menu=Dspbtn.menu.sizes)
+                                          command=self.displayParms_2, font=self.font)
+        Dspbtn.menu.add_cascade(label='image size', menu=Dspbtn.menu.sizes, font=self.font)
         Dspbtn.menu.add_separator()
         Dspbtn.menu.add_command(label='Quit', underline=0,
-                                     command=self.top.destroy)
+                                     command=self.top.destroy, font=self.font)
         Dspbtn['menu'] = Dspbtn.menu
         
         # Make the Select menu
-        Selbtn = tkinter.Menubutton(self.mBar, text='Select', relief='flat')
+        Selbtn = tkinter.Menubutton(self.mBar, text='Select', relief='flat', font=self.font)
         Selbtn.pack(side=tkinter.LEFT, padx=5, pady=5)
         Selbtn.menu = tkinter.Menu(Selbtn, tearoff=0)
         Selbtn.menu.add_command(label='Save selections', underline=0,
-                                command=self.saveSelections)
+                                command=self.saveSelections, font=self.font)
         Selbtn.menu.add_command(label='Add a class', underline=0,
-                                command=self.addClass)
+                                command=self.addClass, font=self.font)
         Selbtn['menu'] = Selbtn.menu
         
         # Make the Class menu
         sc = self.selectClasses[self.selectedColor.get()]
         Classbtn = tkinter.Menubutton(self.mBar, text=sc.label, relief='flat',
-                              background=sc.color)
+                              background=sc.color, font=self.font)
         Classbtn.pack(side=tkinter.LEFT, padx=5, pady=5)
         Classbtn.menu = tkinter.Menu(Classbtn, tearoff=0)
         keys = list(self.selectClasses.keys())
@@ -216,15 +218,16 @@ class montage:
                                         background = sc.color,
                                         activebackground= sc.active,
                                         activeforeground= 'black',
-                                        variable=self.selectedColor)
+                                        variable=self.selectedColor,
+                                        font=self.font)
         Classbtn['menu'] = Classbtn.menu
         self.ClassMenu = Classbtn.menu  # for adding stuff later
         self.ClassButton = Classbtn
 
         # startkey
-        sklabel = tkinter.Label(self.mBar, text='    start key:')
+        sklabel = tkinter.Label(self.mBar, text='    start key:', font=self.font)
         sklabel.pack(side='left',padx=2, pady=5)
-        skentry = tkinter.Entry(self.mBar, textvariable=self.startkey, width=5)
+        skentry = tkinter.Entry(self.mBar, textvariable=self.startkey, width=5, font=self.font)
         skentry.pack(side='left',padx=8, pady=5) 
 
     def montagesize(self):
@@ -317,7 +320,7 @@ class montage:
             self.photolist.append(ib)
             
             if useLabels:
-                lb = tkinter.Label(parent, text=os.path.basename(filename))
+                lb = tkinter.Label(parent, text=os.path.basename(filename), font=self.font)
                 lb.grid(row=j+1, column=i)
             i += 1
             if i > self.ncol-1:
@@ -363,7 +366,7 @@ class montage:
                 F[key] = [filenumber, val]
                 key = key + 1
             except:
-                print("error getting file number from %s" % photo.filename)
+                print(("error getting file number from %s" % photo.filename))
                 continue
 
         if Spiderutils.writedoc(filename, F, headers=headers, mode='a'):
@@ -417,16 +420,17 @@ class montage:
 
     def parmWindow(self,win):
         fe = tkinter.Frame(win)
+
         # Number of columns
-        tkinter.Label(fe,text="no. columns:").pack(side='left', padx=2, pady=2)
-        e = tkinter.Entry(fe, textvariable=self.ncolVar)
+        tkinter.Label(fe,text="no. columns:", font=self.font).pack(side='left', padx=2, pady=2)
+        e = tkinter.Entry(fe, textvariable=self.ncolVar, font=self.font)
         e.pack(side='left', fill='x', expand=1, pady=2, padx=2)
         fe.pack(side='top',fill='both', expand=1)
         e.bind('<Return>', lambda e, w=win: self.parmquit(w))
 	
         # Bottom
         fbut = tkinter.Frame(win, borderwidth=2) #relief='raised',
-        tkinter.Button(fbut, text='Ok', command=win.destroy).pack(padx=2,pady=2)
+        tkinter.Button(fbut, text='Ok', command=win.destroy, font=self.font).pack(padx=2,pady=2)
         fbut.pack(side='bottom', fill='x', expand=1)
 
     def parmquit(self,win):
