@@ -10,6 +10,7 @@
 #    TO DO: if stack file is selected with file browser, don't convert to template
 #    TO DO: link right-click to external viewer
 #    TO DO: invert should look for deselected particles instead of particles not of the current class (in case of 3 classes)
+#    2025-07-09 -- updated to Python3
 #    2012-04-10 -- labels greater than one million written in exponential notation
 #    2012-03-19 -- writes to screen the directory of output doc, if specified
 #    2009-12-04 -- exits from initial popup gracefully
@@ -37,7 +38,7 @@
 #    2007-07-07 -- added "undo filters" button, help pop-up window for keyboard shortcuts
 #    2007-06-29 -- added "smooth" button -- removed incompatible (?) contrast slidebar
 
-print("montagefromdoc.py, Modified 2025 Jul 09")
+print("montagefromdoc.py, Modified 2025 Jul 10")
 
 # Spider Python Library
 # Copyright (C) 2006-2018  Health Research Inc., Menands, NY
@@ -46,11 +47,16 @@ print("montagefromdoc.py, Modified 2025 Jul 09")
 import Pmw
 
 import tkinter
-from tkinter import messagebox, filedialog
-from PIL import Image, ImageTk, ImageEnhance, ImageFilter
+from tkinter import messagebox, filedialog, font
 import os, sys
 from   Spider            import Spiderutils
-###import tqdm
+try:
+    from PIL import Image, ImageTk, ImageEnhance, ImageFilter
+except ImportError as e:
+    print(f"\nERROR!! {e}")
+    print(  f"  Please install 'pillow' using conda or pip")
+    print(   "  Exiting...\n")
+    exit()
 
 def backup(filename):
     if os.path.exists(filename):
@@ -118,13 +124,56 @@ class selectionClass:
         if activecolor != None:
             self.active = activecolor
 
-# ******************************************************************************
-# class tmontage
-#       input image list can be a list of filenames or a previously loaded
-#       list of Image.images
-#       Create the toplevel window outside and pass it in
-# ******************************************************************************
 class tmontage:
+    # ******************************************************************************
+    # class tmontage
+    #   Purpose:
+    #     input image list can be a list of filenames or a previously loaded
+    #     list of Image.images
+    #     Create the toplevel window outside and pass it in
+    #
+    #   Functions:
+    #     __init__
+    #     select
+    #     invertSelect
+    #     selectAll
+    #     clearAll
+    #     shiftSelect
+    #     selectcallback
+    #     test : to make sure that events are working
+    #     saveSelections
+    #     closeWindow
+    #     openSelections
+    #     setTitle
+    #     increaseFilenum
+    #     decreaseFilenum
+    #     askSelections
+    #     loadImageList
+    #     readInputDoc
+    #     readOutputDoc
+    #     nextPage
+    #     prevPage
+    #     updatePage
+    #     makeMenus
+    #     saveClose
+    #     shortcuts
+    #     createMontage
+    #     frsize : try to resize the window after the mainloop starts
+    #     checksize
+    #     display
+    #     smooth
+    #     updateSmooth
+    #     updateBrightness
+    #     orig2 : reset values
+    #     displayParms_label
+    #     showLabels
+    #     labelWindow
+    #     displayParms_size
+    #     displayParms_colrow
+    #     parmWindow
+    #
+    # ******************************************************************************
+
     def __init__(self, master, prefs,
                  title=None, # reverse=0, contrast=1.0,
                  brightness=1.0, selectedColor='1', deselectedColor='Red'):
@@ -138,6 +187,7 @@ class tmontage:
         self.ncol = prefs.ncol
         self.maxrow = prefs.maxrow
         self.montage_size = self.ncol * self.maxrow
+        self.font = font.Font(family="mincho", size=12)
 
         self.page_var = tkinter.StringVar()
         print('Opening', self.docfile, prefs.serfile)
@@ -164,11 +214,9 @@ class tmontage:
         self.sertemplate.set(self.serfile)        # particle images
 
         # draw window
-        self.top = master   #tkinter.Toplevel(master)
+        self.top = master
         if title == None: 
             self.setTitle()
-            #title = "Montage from " + os.path.basename(self.docfile)
-            #self.top.title(title)
 
         self.useLabels = prefs.use_labels
         self.showVar = tkinter.IntVar()
@@ -190,7 +238,6 @@ class tmontage:
 
         # some Tk Variables
         self.ncolVar = tkinter.IntVar()
-#        self.ncolVar = tkinter.StringVar()
         self.maxrowVar = tkinter.IntVar()
         self.maxrowVar.set(self.maxrow)
         self.sizeVar = tkinter.IntVar()
@@ -306,7 +353,6 @@ class tmontage:
             photo.selectvalue = sc.key
             if photo.num in self.sel_dictionary :
                 del self.sel_dictionary[photo.num]
-#                print 'clearAll:', photo.num, 'found'
 
     def shiftSelect(self, widget, image):
         # widget order is numbered from 1..n
@@ -337,7 +383,7 @@ class tmontage:
         print('New color:', self.selectClasses[key].color)
 
     def test(self, event=None):
-        print("havereaddoc_boolean:", self.havereaddoc_boolean)
+        import inspect ; print(f"{os.path.splitext( os.path.basename(__file__) )[0]}:\t{inspect.stack()[0][3]}() called by {inspect.stack()[1][3]}()")
 
     def saveSelections(self, event=None):
         # construct a dictionary to pass to writedocfile
@@ -368,16 +414,16 @@ class tmontage:
         doc_frame = tkinter.Frame(doc_win, padx=5, pady=5)
 
         doc_button = tkinter.Button(doc_frame, text='Choose montage doc',
-            command = lambda w=doc_win, d='doc' : self.askSelections(w,d))
-        doc_entry = tkinter.Entry(doc_frame, textvariable=self.doc_var, width=24)
+            command = lambda w=doc_win, d='doc' : self.askSelections(w,d), font=self.font)
+        doc_entry = tkinter.Entry(doc_frame, textvariable=self.doc_var, width=24, font=self.font)
 
         ser_button = tkinter.Button(doc_frame, text='Choose image template',
-            command = lambda w=doc_win, d='ser' : self.askSelections(w,d))
-        ser_entry = tkinter.Entry(doc_frame, textvariable=self.sertemplate, width=24)
+            command = lambda w=doc_win, d='ser' : self.askSelections(w,d), font=self.font)
+        ser_entry = tkinter.Entry(doc_frame, textvariable=self.sertemplate, width=24, font=self.font)
 
         out_button = tkinter.Button(doc_frame, text='Choose output doc',
-            command = lambda w=doc_win, d='out' : self.askSelections(w,d))
-        out_entry = tkinter.Entry(doc_frame, textvariable=self.savefile_var, width=24)
+            command = lambda w=doc_win, d='out' : self.askSelections(w,d, font=self.font))
+        out_entry = tkinter.Entry(doc_frame, textvariable=self.savefile_var, width=24, font=self.font)
 
         doc_button.grid(row=0, column=0)
         doc_entry.grid(row=0, column=1)
@@ -389,11 +435,11 @@ class tmontage:
 
         # Done
         quit_frame = tkinter.Frame(doc_win, padx=40)
-        decr_button = tkinter.Button(quit_frame, text="Decr.", command = lambda w=doc_win: self.decreaseFilenum(w))
+        decr_button = tkinter.Button(quit_frame, text="Decr.", command = lambda w=doc_win: self.decreaseFilenum(w), font=self.font)
         decr_button.pack(side=tkinter.LEFT, pady=4)
-        incr_button = tkinter.Button(quit_frame, text="Incr.", command = lambda w=doc_win: self.increaseFilenum(w))
+        incr_button = tkinter.Button(quit_frame, text="Incr.", command = lambda w=doc_win: self.increaseFilenum(w), font=self.font)
         incr_button.pack(side=tkinter.LEFT, pady=4)
-        tkinter.Button(quit_frame, text="Done", command=doc_win.destroy).pack(side=tkinter.RIGHT, pady=4)
+        tkinter.Button(quit_frame, text="Done", command=doc_win.destroy).pack(side=tkinter.RIGHT, pady=4, font=self.font)
         quit_frame.pack(fill=tkinter.X)
 
         doc_win.bind('<Return>',    lambda p=self.top, w=doc_win: clickOK(p,w))
@@ -503,9 +549,9 @@ class tmontage:
         if which == 'out':
             self.savefile_var.set(filename)
 
-    # Get particle numbers for current pageful of images
     def loadImageList(self):
-        # load image list
+        # Get particle numbers for current pageful of images
+
         partdoc = self.docfile
         if len(partdoc) < 1:
             return
@@ -535,7 +581,6 @@ class tmontage:
             self.last = 0
 
     def readInputDoc (self) :
-#        print 'Opening', self.docfile
         self.docfile_spi = Spiderutils.readSpiderDocFile(self.docfile)
         self.num_keys = len(list(self.docfile_spi.keys()))
         self.first_key = 1
@@ -640,48 +685,40 @@ class tmontage:
         self.leftframe = tkinter.Frame(self.mBar) # , relief='raised', borderwidth=1)
 
         # Make the File menu
-        Filebtn = tkinter.Menubutton(self.leftframe, text='File', relief='flat')
+        Filebtn = tkinter.Menubutton(self.leftframe, text='File', relief='flat', font=self.font)
         Filebtn.pack(side=tkinter.LEFT, padx=5, pady=5)
         Filebtn.menu = tkinter.Menu(Filebtn, tearoff=0)
 
-        Filebtn.menu.add_command(label='Set filenames', command=self.openSelections)
+        Filebtn.menu.add_command(label='Set filenames', command=self.openSelections, font=self.font)
         Filebtn.menu.add_command(label='Save selection', underline=0,
-                                command=self.saveSelections)
+                                command=self.saveSelections, font=self.font)
         Filebtn.menu.add_command(label='Read selection', underline=0,
-                                command=self.readOutputDoc)
+                                command=self.readOutputDoc, font=self.font)
         Filebtn.menu.add_command(label='Close', underline=0,
-                                     command=self.top.destroy)
+                                     command=self.top.destroy, font=self.font)
 
         # Finish
         Filebtn['menu'] = Filebtn.menu
 
 
         # Make the Display menu
-        Dspbtn = tkinter.Menubutton(self.leftframe, text='Display', relief='flat')
+        Dspbtn = tkinter.Menubutton(self.leftframe, text='Display', relief='flat', font=self.font)
         Dspbtn.pack(side=tkinter.LEFT, padx=5, pady=5)
         Dspbtn.menu = tkinter.Menu(Dspbtn, tearoff=0)
 
         Dspbtn.menu.add_command(label='no. columns & rows', underline=0,
-                                    command=self.displayParms_colrow)
+                                    command=self.displayParms_colrow, font=self.font)
         Dspbtn.menu.add_command(label='change label', underline=0,
-                                    command=self.displayParms_label)
+                                    command=self.displayParms_label, font=self.font)
 #        Dspbtn.menu.add_command(label='reverse order', command=self.revRedisplay)
 
         # 'size' has a submenu of checkbuttons
         Dspbtn.menu.sizes = tkinter.Menu(Dspbtn.menu, tearoff=0)
-        Dspbtn.menu.sizes.add_radiobutton(label='1/4', underline=0,
-                                          variable=self.sizeVar, value=4,
-                                          command=self.displayParms_size)
-        Dspbtn.menu.sizes.add_radiobutton(label='1/2', underline=0,
-                                          variable=self.sizeVar, value=0,
-                                          command=self.displayParms_size)
-        Dspbtn.menu.sizes.add_radiobutton(label='1x', underline=0,
-                                          variable=self.sizeVar, value=1,
-                                          command=self.displayParms_size)
-        Dspbtn.menu.sizes.add_radiobutton(label='2x', underline=0,
-                                          variable=self.sizeVar, value=2,
-                                          command=self.displayParms_size)
-        Dspbtn.menu.add_cascade(label='image size', menu=Dspbtn.menu.sizes)
+        for size_label, size_value in zip(['1/4','1/2','1x','2x'],[4,0,1,2]):
+            Dspbtn.menu.sizes.add_radiobutton(label=size_label, underline=0,
+                                              variable=self.sizeVar, value=size_value,
+                                              command=self.displayParms_size, font=self.font)
+        Dspbtn.menu.add_cascade(label='image size', menu=Dspbtn.menu.sizes, font=self.font)
 
         # Make the Color submenu
         Dspbtn.menu.colors = tkinter.Menu(Dspbtn.menu, tearoff=0)
@@ -697,32 +734,33 @@ class tmontage:
                                         background = sc.color,
                                         activebackground= sc.active,
                                         activeforeground= 'black',
-                                        variable=self.selectedColor)
+                                        variable=self.selectedColor,
+                                        font=self.font)
         Dspbtn.menu.colors.bad.add_radiobutton(label = 'Deselect', underline=0,
             value = self.systembackground, foreground = 'white', background = self.systembackground, 
-            activebackground = self.actbgd, activeforeground= 'black', variable=self.deselectedColor)
+            activebackground = self.actbgd, activeforeground= 'black', variable=self.deselectedColor, font=self.font)
         Dspbtn.menu.colors.bad.add_radiobutton(label = 'Red', underline=0,
             value = 'Red', foreground = 'white', background = 'Red', 
-            activebackground = 'pink', activeforeground= 'black', variable=self.deselectedColor)
-        Dspbtn.menu.colors.add_cascade(label='selected',   menu=Dspbtn.menu.colors.good)
-        Dspbtn.menu.colors.add_cascade(label='deselected', menu=Dspbtn.menu.colors.bad)
-        Dspbtn.menu.add_cascade(label='colors', menu=Dspbtn.menu.colors)
+            activebackground = 'pink', activeforeground= 'black', variable=self.deselectedColor, font=self.font)
+        Dspbtn.menu.colors.add_cascade(label='selected',   menu=Dspbtn.menu.colors.good, font=self.font)
+        Dspbtn.menu.colors.add_cascade(label='deselected', menu=Dspbtn.menu.colors.bad, font=self.font)
+        Dspbtn.menu.add_cascade(label='colors', menu=Dspbtn.menu.colors, font=self.font)
 
         # Finish
 #        Dspbtn.menu.add_separator()
         Dspbtn['menu'] = Dspbtn.menu
 
         # Make the Select menu
-        Selectbtn = tkinter.Menubutton(self.leftframe, text='Select', relief='flat')
+        Selectbtn = tkinter.Menubutton(self.leftframe, text='Select', relief='flat', font=self.font)
         Selectbtn.pack(side=tkinter.LEFT, padx=5, pady=5)
         Selectbtn.menu = tkinter.Menu(Selectbtn, tearoff=0)
 
         Selectbtn.menu.add_command(label='Select all', underline=0,
-                                    command=self.selectAll)
+                                    command=self.selectAll, font=self.font)
         Selectbtn.menu.add_command(label='Clear all', underline=0,
-                                    command=self.clearAll)
+                                    command=self.clearAll, font=self.font)
         Selectbtn.menu.add_command(label='Invert', underline=0,
-                                    command=self.invertSelect)
+                                    command=self.invertSelect, font=self.font)
 
         Selectbtn['menu'] = Selectbtn.menu
 
@@ -732,22 +770,22 @@ class tmontage:
         badcolor = self.deselectedColor.get()
         Invbtn = tkinter.Button(self.leftframe, text='Invert', command=self.invertSelect,
             background = sc.color, foreground = badcolor, 
-            activeforeground = sc.color, activebackground = badcolor)
+            activeforeground = sc.color, activebackground = badcolor, font=self.font)
         Invbtn.pack(side=tkinter.LEFT, padx=5, pady=5)
 
         # Make the Close button
-        Clsbtn = tkinter.Button(self.leftframe, text='Close', command=self.top.destroy)
+        Clsbtn = tkinter.Button(self.leftframe, text='Close', command=self.top.destroy, font=self.font)
         Clsbtn.pack(side=tkinter.LEFT, padx=5, pady=5)
 
         # Make the Save+Close button
-        Selbtn = tkinter.Button(self.leftframe, text='Save+Close', command=self.saveClose)
+        Selbtn = tkinter.Button(self.leftframe, text='Save+Close', command=self.saveClose, font=self.font)
         Selbtn.pack(side=tkinter.LEFT, padx=5, pady=5)
 
         # Make help menu
-        Helpbtn = tkinter.Menubutton(self.leftframe, text='Help', underline=0, relief='flat')
+        Helpbtn = tkinter.Menubutton(self.leftframe, text='Help', underline=0, relief='flat', font=self.font)
         Helpbtn.menu = tkinter.Menu(Helpbtn, tearoff=0)
         Helpbtn.menu.add_command(label='Keyboard shortcuts', underline=0, 
-                                 command=self.shortcuts)
+                                 command=self.shortcuts, font=self.font)
         Helpbtn['menu'] = Helpbtn.menu
         Helpbtn.pack(side=tkinter.RIGHT, padx=5, pady=5)
 
@@ -756,12 +794,10 @@ class tmontage:
 
         # Make the page bar
         self.pagebar = tkinter.Frame(self.mBar) # , relief='sunken', borderwidth=1)
-        tkinter.Label(self.pagebar, text='Page').pack(side=tkinter.LEFT)
-        page_entry = tkinter.Entry(self.pagebar, textvariable=self.page_var, width=3)
+        tkinter.Label(self.pagebar, text='Page', font=self.font).pack(side=tkinter.LEFT)
+        page_entry = tkinter.Entry(self.pagebar, textvariable=self.page_var, width=3, font=self.font)
         page_entry.pack(side=tkinter.LEFT)
-#        self.page_label = tkinter.Label(self.pagebar, text='of '+str(self.num_pages))
-#        self.page_label.pack(side=tkinter.LEFT)
-        page_button = tkinter.Button(self.pagebar, text='Update', command=self.updatePage)
+        page_button = tkinter.Button(self.pagebar, text='Update', command=self.updatePage, font=self.font)
         page_button.pack(side=tkinter.LEFT)
         self.pagebar.pack(side=tkinter.RIGHT, padx=5, pady=5)
 
@@ -771,7 +807,7 @@ class tmontage:
         f2 = tkinter.Frame(self.top)
         sbri = tkinter.Scale(f2, label='brightness', orient=tkinter.HORIZONTAL,
                      from_=0, to=3, resolution=0.1, # sliderlength=width,
-                     variable=self.brightness, command=self.updateBrightness)
+                     variable=self.brightness, command=self.updateBrightness, font=self.font)
         sbri.pack(side='left', padx=5)
 
 #        scon = Scale(f2, label='contrast', orient=HORIZONTAL,
@@ -779,10 +815,10 @@ class tmontage:
 #                     variable=self.contrast, command=self.updateContrast)
 #        scon.pack(side='right', padx=5)
 
-        Smthbtn = tkinter.Button(f2, text='Smooth', command=self.smooth)
+        Smthbtn = tkinter.Button(f2, text='Smooth', command=self.smooth, font=self.font)
         Smthbtn.pack(side=tkinter.LEFT, padx=5, pady=5)
 
-        origb = tkinter.Button(f2, text='Undo filters', command=self.orig2)
+        origb = tkinter.Button(f2, text='Undo filters', command=self.orig2, font=self.font)
         origb.pack(side=tkinter.RIGHT, padx=5, pady=5)
 
         f2.pack(side='bottom', fill='x', expand=0)
@@ -794,81 +830,44 @@ class tmontage:
     def shortcuts(self):
         sc = tkinter.Toplevel(self.top)
         sc.title("Shortcuts")
-        rownum = 0
+        self.sc_rownum = 0
+        self.scmain = tkinter.Frame(sc, borderwidth=2, relief=tkinter.RIDGE)
+        tkinter.Label(self.scmain, text='Main window:', font=self.font).grid(row=self.sc_rownum, sticky=tkinter.W)
 
-        scmain = tkinter.Frame(sc, borderwidth=2, relief=tkinter.RIDGE)
-        tkinter.Label(scmain, text='Main window:').grid(row=rownum, sticky=tkinter.W)
-
-        rownum += 1
-        tkinter.Label(scmain, text='Page down'         ).grid(row=rownum, column=0, sticky=tkinter.W)
-        tkinter.Label(scmain, text='Next page'         ).grid(row=rownum, column=1, sticky=tkinter.W)
-
-        rownum += 1
-        tkinter.Label(scmain, text='Page up'           ).grid(row=rownum, column=0, sticky=tkinter.W)
-        tkinter.Label(scmain, text='Previous page'     ).grid(row=rownum, column=1, sticky=tkinter.W)
-
-        rownum += 1
-        tkinter.Label(scmain, text='Control-o'         ).grid(row=rownum, column=0, sticky=tkinter.W)
-        tkinter.Label(scmain, text='Open selection doc').grid(row=rownum, column=1, sticky=tkinter.W)
-
-        rownum += 1
-        tkinter.Label(scmain, text='Control-w'         ).grid(row=rownum, column=0, sticky=tkinter.W)
-        tkinter.Label(scmain, text='Close window'      ).grid(row=rownum, column=1, sticky=tkinter.W)
-
-        rownum += 1
-        tkinter.Label(scmain, text='Control-s'         ).grid(row=rownum, column=0, sticky=tkinter.W)
-        tkinter.Label(scmain, text='Save selections'   ).grid(row=rownum, column=1, sticky=tkinter.W)
-
-        rownum += 1
-        tkinter.Label(scmain, text='Control-r'         ).grid(row=rownum, column=0, sticky=tkinter.W)
-        tkinter.Label(scmain, text='Read selections'   ).grid(row=rownum, column=1, sticky=tkinter.W)
-
-        rownum += 1
-        tkinter.Label(scmain, text='Control-v'         ).grid(row=rownum, column=0, sticky=tkinter.W)
-        tkinter.Label(scmain, text='Invert selections' ).grid(row=rownum, column=1, sticky=tkinter.W)
-
-        rownum += 1
-        tkinter.Label(scmain, text='DELETE'            ).grid(row=rownum, column=0, sticky=tkinter.W)
-        tkinter.Label(scmain, text='Clear selections'  ).grid(row=rownum, column=1, sticky=tkinter.W)
-
-        rownum += 1
-        tkinter.Label(scmain, text='Control-a'         ).grid(row=rownum, column=0, sticky=tkinter.W)
-        tkinter.Label(scmain, text='Select all'        ).grid(row=rownum, column=1, sticky=tkinter.W)
-
-        rownum += 1
-        tkinter.Label(scmain, text='Return'            ).grid(row=rownum, column=0, sticky=tkinter.W)
-        tkinter.Label(scmain, text='Update'            ).grid(row=rownum, column=1, sticky=tkinter.W)
-
-        rownum += 1
-        tkinter.Label(scmain, text='Control-p'         ).grid(row=rownum, column=0, sticky=tkinter.W)
-        tkinter.Label(scmain, text='Print settings'    ).grid(row=rownum, column=1, sticky=tkinter.W)
-
-        rownum += 1
-        tkinter.Label(scmain, text='Control-f'         ).grid(row=rownum, column=0, sticky=tkinter.W)
-        tkinter.Label(scmain, text='Show labels'       ).grid(row=rownum, column=1, sticky=tkinter.W)
-        scmain.pack(padx=5, pady=5, expand=1)
+        self.addShortcut('Page down', 'Next page')
+        self.addShortcut('Page up', 'Previous page')
+        self.addShortcut('Control-o', 'Open selection doc')
+        self.addShortcut('Control-w', 'Close window')
+        self.addShortcut('Control-s', 'Save selections')
+        self.addShortcut('Control-r', 'Read selections')
+        self.addShortcut('Control-v', 'Invert selections')
+        self.addShortcut('DELETE', 'Clear selections')
+        self.addShortcut('Control-a', 'Select all')
+        self.addShortcut('Return', 'Update')
+        self.addShortcut('Control-p', 'Print settings')
+        self.addShortcut('Control-f', 'Show labels')
+        self.scmain.pack(padx=5, pady=5, expand=1)
 
         scopen = tkinter.Frame(sc, borderwidth=2, relief=tkinter.RIDGE)
-        tkinter.Label(scopen, text='Open Selections:').grid(row=0, sticky=tkinter.W)
+        tkinter.Label(scopen, text='Open Selections:', font=self.font).grid(row=0, sticky=tkinter.W)
 
-        tkinter.Label(scopen, text='Control-n'          ).grid(row=1, column=0, sticky=tkinter.W)
-        tkinter.Label(scopen, text='Increase filenumber').grid(row=1, column=1, sticky=tkinter.W)
+        tkinter.Label(scopen, text='Control-n', font=self.font          ).grid(row=1, column=0, sticky=tkinter.W)
+        tkinter.Label(scopen, text='Increase filenumber', font=self.font).grid(row=1, column=1, sticky=tkinter.W)
 
-        tkinter.Label(scopen, text='Control-p'          ).grid(row=2, column=0, sticky=tkinter.W)
-        tkinter.Label(scopen, text='Decrease filenumber').grid(row=2, column=1, sticky=tkinter.W)
+        tkinter.Label(scopen, text='Control-p', font=self.font          ).grid(row=2, column=0, sticky=tkinter.W)
+        tkinter.Label(scopen, text='Decrease filenumber', font=self.font).grid(row=2, column=1, sticky=tkinter.W)
         scopen.pack(padx=5, pady=5)
 
         okframe = tkinter.Frame(sc)
-        tkinter.Button(okframe, text="OK", command=sc.destroy).pack()
+        tkinter.Button(okframe, text="OK", command=sc.destroy, font=self.font).pack()
         sc.bind('<Return>', lambda p=self.top, w=sc: clickOK(p,w)) 
         okframe.pack()
 
-#    def revOrder(self):
-#        self.imagelist.reverse()
-
-#    def revRedisplay(self):
-#        self.revOrder()
-#        self.displayParms_size()
+    def addShortcut(self, sc_combo, sc_descr):
+        # Add single line to shortcut table
+        self.sc_rownum+= 1
+        tkinter.Label(self.scmain, text=sc_combo, font=self.font).grid(row=self.sc_rownum, column=0, sticky=tkinter.W)
+        tkinter.Label(self.scmain, text=sc_descr, font=self.font).grid(row=self.sc_rownum, column=1, sticky=tkinter.W)
 
     def createMontage(self):
         if hasattr(self,'sf'): self.sf.destroy()
@@ -889,6 +888,7 @@ class tmontage:
 
     def frsize(self):
         " try to resize the window after the mainloop starts "
+
         ht = self.fr.winfo_reqheight()
         wd = self.fr.winfo_reqwidth()
         if ht == 1 or wd == 1:
@@ -919,7 +919,6 @@ class tmontage:
         return x,y
 
     def display(self, parent):
-#        x,y = self.checksize()
         useLabels = self.useLabels
         self.particle2label = {}
         self.photolist = []
@@ -933,7 +932,6 @@ class tmontage:
         if self.isStack: im = Image.open(self.serfile)
         badcolor = self.deselectedColor.get()
 
-        ###for key in tqdm.tqdm(range(self.first_key,self.last_key+1), unit='img'):
         for key in range(self.first_key,self.last_key+1):
             order += 1  # increment counter
             num = self.imagelist[order-1]
@@ -975,7 +973,6 @@ class tmontage:
                 else :
                     ib = tkinter.Label(parent, image=photo, bd=self.bd, borderwidth=3,
                         background=badcolor)
-#            print 'display:', num, im.selectvalue
 
             ib.fim = fim
             ib.bim = img.copy()
@@ -1014,7 +1011,7 @@ class tmontage:
             self.particle2label[filenumber] = ib
 
             if useLabels:
-                lb = tkinter.Label(parent, text=os.path.basename(ib.label))
+                lb = tkinter.Label(parent, text=os.path.basename(ib.label), font=self.font)
                 lb.grid(row=j+1, column=i)
             i += 1
             if i > self.ncol-1:
@@ -1024,7 +1021,6 @@ class tmontage:
 
 #        self.updateContrast(self.contrast.get())
         self.updateBrightness(self.brightness.get())
-##        self.updateSmooth()
 
     def smooth(self):
         self.num_smooths += 1
@@ -1066,10 +1062,9 @@ class tmontage:
             self.photolist[counter].bim = ImageEnhance.Brightness(img).enhance(brightness)
             self.photolist[counter].photo.paste(self.photolist[counter].bim)
 
-#            self.updateSmooth()
-
     def orig2(self):
         # reset values
+
         self.num_smooths = 0
         print('smoothing = 0')
         self.brightness.set(1)
@@ -1100,7 +1095,6 @@ class tmontage:
             self.photolist[counter].fim = img
 
         self.updateBrightness(self.brightness.get())
-##        self.updateSmooth()
 
     def displayParms_label(self):
         changed = False  # initialize
@@ -1109,7 +1103,7 @@ class tmontage:
         w.title("Labels")
         self.labelWindow(w)
         w.bind('<Return>', lambda p=self.top, w=w: clickOK(p,w)) 
-        self.top.wait_window(w) # wait for window to be destroyed
+        self.top.wait_window(w)  # wait for window to be destroyed
 
         if self.showVar.get() != self.useLabels : changed = True
         if self.column_var.get() != self.label_col : changed = True
@@ -1136,25 +1130,25 @@ class tmontage:
     def labelWindow(self,win):
         label_frame = tkinter.Frame(win, relief='groove', borderwidth=2)
         tkinter.Checkbutton(label_frame, text='show labels', state=tkinter.NORMAL,
-            variable=self.showVar).grid(row=0, column=0)
+            variable=self.showVar, font=self.font).grid(row=0, column=0)
 
         # doc file column number
-        tkinter.Label(label_frame, text="doc file column for label").grid(row=1, column=0)
-        tkinter.Entry(label_frame, width=6, textvariable=self.column_var).grid(row=1, column=1)
+        tkinter.Label(label_frame, text="doc file column for label", font=self.font).grid(row=1, column=0)
+        tkinter.Entry(label_frame, width=6, textvariable=self.column_var, font=self.font).grid(row=1, column=1)
 
         # text label
-        tkinter.Label(label_frame, text="label text").grid(row=2, column=0, sticky=tkinter.E)
-        tkinter.Entry(label_frame, width=6, textvariable=self.text_var).grid(row=2, column=1)
+        tkinter.Label(label_frame, text="label text", font=self.font).grid(row=2, column=0, sticky=tkinter.E)
+        tkinter.Entry(label_frame, width=6, textvariable=self.text_var, font=self.font).grid(row=2, column=1)
 
         # particle column
-        tkinter.Label(label_frame, text="doc file column for particle").grid(row=3, column=0, sticky=tkinter.E)
-        tkinter.Entry(label_frame, width=6, textvariable=self.particle_var).grid(row=3, column=1)
+        tkinter.Label(label_frame, text="doc file column for particle", font=self.font).grid(row=3, column=0, sticky=tkinter.E)
+        tkinter.Entry(label_frame, width=6, textvariable=self.particle_var, font=self.font).grid(row=3, column=1)
 
         # finish labels frame
         label_frame.pack()
 
         fbut = tkinter.Frame(win, borderwidth=2) #relief='raised',
-        tkinter.Button(fbut, text='Ok', command=win.destroy).pack(padx=2,pady=2)
+        tkinter.Button(fbut, text='Ok', command=win.destroy, font=self.font).pack(padx=2,pady=2)
         fbut.pack(side='bottom', fill='x', expand=1)
 
     def displayParms_size(self):
@@ -1164,7 +1158,6 @@ class tmontage:
 
     def displayParms_colrow(self):
         self.ncolVar.set(self.ncol)
-#        self.ncolVar.set(str(self.ncol))
         w = tkinter.Toplevel(self.top)
         w.title("Dimensions")
         self.parmWindow(w)
@@ -1199,19 +1192,19 @@ class tmontage:
         fe = tkinter.Frame(win)
 
         # number of columns
-        tkinter.Label(fe,text="no. columns:").grid(row=0, column=0, padx=2, pady=2)
-        e = tkinter.Entry(fe, textvariable=self.ncolVar)
+        tkinter.Label(fe,text="no. columns:", font=self.font).grid(row=0, column=0, padx=2, pady=2)
+        e = tkinter.Entry(fe, textvariable=self.ncolVar, font=self.font)
         e.grid(row=0, column=1, pady=2, padx=2)
 
         # maximum number of rows
-        tkinter.Label(fe,text="max. rows:").grid(row=1, column=0, padx=2, pady=2)
-        m = tkinter.Entry(fe, textvariable=self.maxrowVar)
+        tkinter.Label(fe,text="max. rows:", font=self.font).grid(row=1, column=0, padx=2, pady=2)
+        m = tkinter.Entry(fe, textvariable=self.maxrowVar, font=self.font)
         m.grid(row=1, column=1, pady=2, padx=2)
 
         # finish
         fe.pack(side='top',fill='both', expand=1)        
         fbut = tkinter.Frame(win, borderwidth=2) #relief='raised',
-        tkinter.Button(fbut, text='Ok', command=win.destroy).pack(padx=2,pady=2)
+        tkinter.Button(fbut, text='Ok', command=win.destroy, font=self.font).pack(padx=2,pady=2)
         fbut.pack(side='bottom', fill='x', expand=1)
 
 
@@ -1234,8 +1227,8 @@ def initTemplate(parent,which):
 
 def buttonExit(win):
     win.destroy()
-    prefs1.continue_boolean = False
-#    return continue_boolean
+    prefs1.do_continue = False
+#    return do_continue
 #    sys.exit()
 
 class settings:
@@ -1322,27 +1315,26 @@ if __name__ == "__main__":
     # optionally get doc file from command line
     if sys.argv[1:]:
         prefs1.docfile = sys.argv[1]
-#        if sys.argv[2:]: prefs1.serfile = sys.argv[2]
     docfilenumber = Spiderutils.getfilenumber(prefs1.docfile)
     extension = os.path.splitext(prefs1.docfile)[1]
 
     # parameter window/frame
     param_win = tkinter.Toplevel(root)
-#    param_win.lift(root)  # doesn't do anything
+#    param_win.lift(root)  # doesn't do anything?
     param_win.title("parameters")
     param_frame = tkinter.Frame(param_win, relief='ridge', borderwidth=2)
 
     # docfile entry
     tkinter.Button(param_frame, text='Doc file', command = lambda
-        w=param_win, d='doc': initTemplate(w,d)).grid(row=0, column=0, sticky=tkinter.W+tkinter.E)
+        w=param_win, d='doc': initTemplate(w,d), font=("mincho 12")).grid(row=0, column=0, sticky=tkinter.W+tkinter.E)
     docvar = tkinter.StringVar()
     docvar.set(os.path.splitext(prefs1.docfile)[0] + extension)
-    doc_entry = tkinter.Entry(param_frame, textvariable=docvar, width=20)
+    doc_entry = tkinter.Entry(param_frame, textvariable=docvar, width=20, font=("mincho 12"))
     doc_entry.grid(row=0, column=1)
 
     # particle entry
     tkinter.Button(param_frame, text='Particle template',
-        command = lambda w=param_win, d='ser': initTemplate(w,d)).grid(row=1, column=0)
+        command = lambda w=param_win, d='ser': initTemplate(w,d), font=("mincho 12")).grid(row=1, column=0)
 
     if sys.argv[2:]: 
         prefs1.serfile = sys.argv[2]
@@ -1351,45 +1343,45 @@ if __name__ == "__main__":
 
     sertemplate = tkinter.StringVar()
     sertemplate.set(os.path.splitext(prefs1.serfile)[0] + extension)
-    ser_entry = tkinter.Entry(param_frame, textvariable=sertemplate, width=20)
+    ser_entry = tkinter.Entry(param_frame, textvariable=sertemplate, width=20, font=("mincho 12"))
     ser_entry.grid(row=1, column=1)
 
     # outfile entry
     tkinter.Button(param_frame, text='Output doc file', command = lambda
-        w=param_win, d='out': initTemplate(w,d)).grid(row=2, column=0, sticky=tkinter.W+tkinter.E)
+        w=param_win, d='out': initTemplate(w,d), font=("mincho 12")).grid(row=2, column=0, sticky=tkinter.W+tkinter.E)
 
     prefs1.outfile = renumberFromTemplate(prefs1.docfile,prefs1.outfile)[0]
 
     outvar = tkinter.StringVar()
     outvar.set(os.path.splitext(prefs1.outfile)[0] + extension)
-    out_entry = tkinter.Entry(param_frame, textvariable=outvar, width=20)
+    out_entry = tkinter.Entry(param_frame, textvariable=outvar, width=20, font=("mincho 12"))
     out_entry.grid(row=2, column=1)
 
     # column-number entry
     ncol_frame = tkinter.Frame(param_frame)
     ncol_var = tkinter.IntVar()
     ncol_var.set(prefs1.ncol)
-    tkinter.Label(ncol_frame, text="no. columns:").pack(side='left')
-    ncol_entry = tkinter.Entry(ncol_frame, width=4, textvariable=ncol_var)
+    tkinter.Label(ncol_frame, text="no. columns:", font=("mincho 12")).pack(side='left')
+    ncol_entry = tkinter.Entry(ncol_frame, width=4, textvariable=ncol_var, font=("mincho 12"))
     ncol_entry.pack(side='left')
     ncol_frame.grid(row=3, column=0, pady=2)  # in param_frame
 
-    # max-row frame/entry
+    # maxrow frame/entry
     maxrow_frame = tkinter.Frame(param_frame)
     maxrow_var = tkinter.IntVar()
     maxrow_var.set(prefs1.maxrow)
-    tkinter.Label(maxrow_frame, text="max. rows:").pack(side='left')
-    maxrow_entry = tkinter.Entry(maxrow_frame, width=4, textvariable=maxrow_var)
+    tkinter.Label(maxrow_frame, text="max. rows:", font=("mincho 12")).pack(side='left')
+    maxrow_entry = tkinter.Entry(maxrow_frame, width=4, textvariable=maxrow_var, font=("mincho 12"))
     maxrow_entry.pack(side='left')
     maxrow_frame.grid(row=3, column=1, pady=2)  # in param_frame
 
     # display-size radiobutton
     size_frame = tkinter.Frame(param_frame, relief='groove', borderwidth=2)
-    tkinter.Label(size_frame, text='image size').pack(side='left')
+    tkinter.Label(size_frame, text='image size', font=("mincho 12")).pack(side='left')
     size_var = tkinter.IntVar()
     size_var.set(prefs1.size)
     for text, value in [('1/4',4), ('1/2',0), ('1x',1), ('2x',2)] :
-        tkinter.Radiobutton(size_frame, text=text, value=value, variable=size_var).pack(side='top')
+        tkinter.Radiobutton(size_frame, text=text, value=value, variable=size_var, font=("mincho 12")).pack(side='top')
     size_frame.grid(row=4, column=0, padx=2, pady=2)
 
     # labels frame
@@ -1397,25 +1389,25 @@ if __name__ == "__main__":
     show_var = tkinter.IntVar()
     show_var.set(prefs1.use_labels)
     tkinter.Checkbutton(label_frame, text='show labels', state=tkinter.NORMAL,
-        variable=show_var).grid(row=0, column=0)
+        variable=show_var, font=("mincho 12")).grid(row=0, column=0, sticky=tkinter.E)
 
     # doc file column number
-    tkinter.Label(label_frame, text="doc file column for label").grid(row=1, column=0)
+    tkinter.Label(label_frame, text="doc file column for label", font=("mincho 12")).grid(row=1, column=0, sticky=tkinter.E)
     column_var = tkinter.IntVar()
     column_var.set(prefs1.label_col)
-    tkinter.Entry(label_frame, width=6, textvariable=column_var).grid(row=1, column=1)
+    tkinter.Entry(label_frame, width=6, textvariable=column_var, font=("mincho 12")).grid(row=1, column=1)
 
     # text label
-    tkinter.Label(label_frame, text="label text").grid(row=2, column=0, sticky=tkinter.E)
+    tkinter.Label(label_frame, text="label text", font=("mincho 12")).grid(row=2, column=0, sticky=tkinter.E)
     text_var = tkinter.StringVar()
     text_var.set(prefs1.text_label)
-    tkinter.Entry(label_frame, width=6, textvariable=text_var).grid(row=2, column=1)
+    tkinter.Entry(label_frame, width=6, textvariable=text_var, font=("mincho 12")).grid(row=2, column=1)
 
     # particle column
-    tkinter.Label(label_frame, text="column for particle number").grid(row=3, column=0)
+    tkinter.Label(label_frame, text="column for particle number", font=("mincho 12")).grid(row=3, column=0)
     particle_var = tkinter.IntVar()
     particle_var.set(prefs1.particle_col)
-    tkinter.Entry(label_frame, width=6, textvariable=particle_var).grid(row=3, column=1)
+    tkinter.Entry(label_frame, width=6, textvariable=particle_var, font=("mincho 12")).grid(row=3, column=1)
 
     # finish labels frame
     label_frame.grid(row=4, column=1)
@@ -1423,10 +1415,10 @@ if __name__ == "__main__":
     # finish parameter window/frame
     param_frame.pack(padx=5, pady=5, ipadx=2, ipady=2)
     quit_frame  = tkinter.Frame(param_win, padx=40)
-    done_button = tkinter.Button(quit_frame, text="Continue", command=param_win.destroy)
+    done_button = tkinter.Button(quit_frame, text="Continue", command=param_win.destroy, font=("mincho 12"))
     done_button.pack(side=tkinter.LEFT)
-    prefs1.continue_boolean = True
-    exit_button = tkinter.Button(quit_frame, text="Exit", command=lambda w=param_win: buttonExit(w))
+    prefs1.do_continue = True
+    exit_button = tkinter.Button(quit_frame, text="Exit", command=lambda w=param_win: buttonExit(w), font=("mincho 12"))
     exit_button.pack(side=tkinter.RIGHT)
     quit_frame.pack(fill=tkinter.X)
     param_win.bind('<Return>', lambda p=root, w=param_win: clickOK(p,w))
@@ -1435,8 +1427,7 @@ if __name__ == "__main__":
     root.withdraw()
     root.wait_window(param_win)
     root.deiconify()
-#   print "Continue =", prefs1.continue_boolean
-    if not prefs1.continue_boolean : sys.exit()
+    if not prefs1.do_continue : sys.exit()
 
     # set variables
     prefs1.docfile      = docvar.get()
