@@ -5,12 +5,14 @@
 # MODIFICATIONS:
 #    TO DO: save settings
 #    TO DO: draw from bottom
+#    2025-07-10 -- updated to Python3
 #    2015-09-15 -- added menu
 #    2015-09-15 -- changes depth on the fly
 #    2009-06-04 -- reads existing selection file
 #    2009-06-03 -- saves selection file
 #    2009-06-02 -- allows skipped nodes
-#    print "tree.py, Modified 2015 Sep 15"
+#
+#print("binarytree.py, Modified 2020 Jul 10")
 #
 # Spider Python Library
 # Copyright (C) 2006-2018  Health Research Inc., Menands, NY
@@ -21,9 +23,16 @@ import os
 import Pmw 
 
 from   Spider  import Spiderutils
-from   Tkinter import *
-from   PIL     import Image
-from   PIL     import ImageTk
+import tkinter  #### from   tkinter import *
+from tkinter import font
+
+try:
+    from   PIL import Image, ImageTk
+except ImportError as e:
+    print(f"\nERROR!! {e}")
+    print(   "  Please install 'pillow' using conda or pip")
+    print(   "  Exiting...\n")
+    exit()
 
 def backup(filename):
     if os.path.exists(filename):
@@ -38,7 +47,7 @@ def backup(filename):
                 found_vacancy = 1
                 short_old = os.path.join(shortdir, os.path.basename(filename))
                 short_new = os.path.join(shortdir, os.path.basename(test_filename))
-                print 'Renamed', short_old, 'to', short_new
+                print('Renamed', short_old, 'to', short_new)
                 os.rename(filename, test_filename)
 
 def clickOK(parent,win):
@@ -68,41 +77,42 @@ class BinaryTreeCanvas:
         self.xdim = classavg.size[0] + 2*self.labelBorder
         self.ydim = classavg.size[1] + 2*self.labelBorder + self.margin_width
 
-        # colors
+        # appearance
         self.good_color = 'green'
         self.select_flag = 1
         self.bad_color = 'red'
+        self.font = font.Font(family="mincho", size=12)
 
     def makeMenus(self):
         # ------- create the menu bar -------
-        self.mBar = Frame(self.master, relief='raised', borderwidth=1)
+        self.mBar = tkinter.Frame(self.master, relief='raised', borderwidth=1)
         self.balloon = Pmw.Balloon(self.master)
 
-        self.leftframe = Frame(self.mBar) # , relief='raised', borderwidth=1)
+        self.leftframe = tkinter.Frame(self.mBar) # , relief='raised', borderwidth=1)
 
         # Make the File menu
-        Filebtn = Menubutton(self.leftframe, text='File', relief='flat')
-        Filebtn.pack(side=LEFT, padx=5, pady=5)
-        Filebtn.menu = Menu(Filebtn, tearoff=0)
+        Filebtn = tkinter.Menubutton(self.leftframe, text='File', relief='flat', font=self.font)
+        Filebtn.pack(side=tkinter.LEFT, padx=5, pady=5)
+        Filebtn.menu = tkinter.Menu(Filebtn, tearoff=0)
 
         Filebtn.menu.add_command(label='Save selection', underline=0,
-                                command=self.saveSelections)
+                                command=self.saveSelections, font=self.font)
         Filebtn.menu.add_command(label='Read selection', underline=0,
-                                command=self.readSelections)
+                                command=self.readSelections, font=self.font)
         Filebtn.menu.add_command(label='Close', underline=0,
-                                     command=self.master.destroy)
+                                     command=self.master.destroy, font=self.font)
         Filebtn['menu'] = Filebtn.menu
 
         # Make help menu
-        Helpbtn = Menubutton(self.mBar, text='Help', underline=0, relief='flat')
-        Helpbtn.pack(side=RIGHT, padx=5, pady=5)
-        Helpbtn.menu = Menu(Helpbtn, tearoff=0)
+        Helpbtn = tkinter.Menubutton(self.mBar, text='Help', underline=0, relief='flat', font=self.font)
+        Helpbtn.pack(side=tkinter.RIGHT, padx=5, pady=5)
+        Helpbtn.menu = tkinter.Menu(Helpbtn, tearoff=0)
         Helpbtn.menu.add_command(label='Keyboard shortcuts', underline=0, 
-                                 command=self.shortcuts)
+                                 command=self.shortcuts, font=self.font)
         Helpbtn['menu'] = Helpbtn.menu
 
         # Pack menu bar
-        self.leftframe.pack(side=LEFT) # , padx=5, pady=5)
+        self.leftframe.pack(side=tkinter.LEFT) # , padx=5, pady=5)
         self.mBar.pack(side='top', fill = 'x')
 
     def drawTree(self) :
@@ -115,19 +125,19 @@ class BinaryTreeCanvas:
         if hasattr(self,'VscrollBar'):  self.VscrollBar.destroy()
 
         # define canvas
-        self.tree_canvas = Canvas(self.master,height=self.canvasy)
+        self.tree_canvas = tkinter.Canvas(self.master,height=self.canvasy)
         self.tree_canvas.configure(width=self.canvasx)
         self.tree_canvas.configure(scrollregion=(0,0,self.canvasx,self.canvasy))
-        print 'Canvas dimensions:',self.canvasx,self.canvasy
+        print('Canvas dimensions:',self.canvasx,self.canvasy)
 
         # scrollbars
-        self.HscrollBar = Scrollbar(self.master, command=self.tree_canvas.xview, orient=HORIZONTAL)
+        self.HscrollBar = tkinter.Scrollbar(self.master, command=self.tree_canvas.xview, orient=tkinter.HORIZONTAL)
         self.tree_canvas.configure(xscrollcommand=self.HscrollBar.set)
-        self.HscrollBar.pack(side=BOTTOM, fill=X)
+        self.HscrollBar.pack(side=tkinter.BOTTOM, fill=tkinter.X)
 
-        self.VscrollBar = Scrollbar(self.master, command=self.tree_canvas.yview, orient=VERTICAL)
+        self.VscrollBar = tkinter.Scrollbar(self.master, command=self.tree_canvas.yview, orient=tkinter.VERTICAL)
         self.tree_canvas.configure(yscrollcommand=self.VscrollBar.set)
-        self.VscrollBar.pack(side=RIGHT, fill=Y)
+        self.VscrollBar.pack(side=tkinter.RIGHT, fill=tkinter.Y)
 
         self.class2label = {}  # lookup table to find an image
         
@@ -151,9 +161,10 @@ class BinaryTreeCanvas:
                 # if not top row, then draw line to parent node
                 if currentDepth != 1 :
                     # calculate node# for daughter nodes
-                    parentNode = current_node/2  # will convert to INT (rightly so) if odd
+                    parentNode = current_node//2  # will convert to INT (rightly so) if odd
 
                     # get coordinates for daughter nodes
+                    ###import inspect ; print(f"{os.path.splitext( os.path.basename(__file__) )[0]}:165:{inspect.stack()[0][3]}\tparentNode= '{parentNode}'")
                     parentCoordx = self.coords_dictionary[str(parentNode)][0]
                     parentCoordy = self.coords_dictionary[str(parentNode)][1] - self.ydim + self.margin_width
             
@@ -170,7 +181,7 @@ class BinaryTreeCanvas:
                     # prepare image window and store info
                     classavg = Image.open(classname)
                     Tkimage = ImageTk.PhotoImage(classavg.convert2byte(), palette=256)
-                    image_label = Label(self.tree_canvas, image=Tkimage, borderwidth=self.labelBorder)
+                    image_label = tkinter.Label(self.tree_canvas, image=Tkimage, borderwidth=self.labelBorder)
                     image_label.photo = Tkimage
                     image_label.filenum = current_node
                     self.class2label[current_node] = image_label
@@ -178,9 +189,9 @@ class BinaryTreeCanvas:
                     self.photo_list.append(image_label)
 
                     # draw image window
-                    self.tree_canvas.create_window(nodeCoordx,nodeCoordy, window=image_label, anchor=S)
+                    self.tree_canvas.create_window(nodeCoordx,nodeCoordy, window=image_label, anchor=tkinter.S)
             
-                    last_node = classname  # necessary?
+                    ###last_node = classname  # necessary?
 
         # Finish drawing
         self.tree_canvas.pack()
@@ -192,37 +203,37 @@ class BinaryTreeCanvas:
         self.master.bind('<minus>', self.levelDown)
  
     def shortcuts(self):
-        sc = Toplevel(self.master)
+        sc = tkinter.Toplevel(self.master)
         sc.title("Shortcuts")
         rownum = 0
 
-        scmain = Frame(sc, borderwidth=2, relief=RIDGE)
-        Label(scmain, text='Main window:').grid(row=rownum, sticky=W)
+        scmain = tkinter.Frame(sc, borderwidth=2, relief=tkinter.RIDGE)
+        tkinter.Label(scmain, text='Main window:', font=self.font).grid(row=rownum, sticky=tkinter.W)
 
         rownum += 1
-        Label(scmain, text='+'                 ).grid(row=rownum, column=0, sticky=W)
-        Label(scmain, text='Add row'           ).grid(row=rownum, column=1, sticky=W)
+        tkinter.Label(scmain, text='+', font=self.font                 ).grid(row=rownum, column=0, sticky=tkinter.W)
+        tkinter.Label(scmain, text='Add row', font=self.font           ).grid(row=rownum, column=1, sticky=tkinter.W)
 
         rownum += 1
-        Label(scmain, text='-'                 ).grid(row=rownum, column=0, sticky=W)
-        Label(scmain, text='Remove row'        ).grid(row=rownum, column=1, sticky=W)
+        tkinter.Label(scmain, text='-', font=self.font                 ).grid(row=rownum, column=0, sticky=tkinter.W)
+        tkinter.Label(scmain, text='Remove row', font=self.font        ).grid(row=rownum, column=1, sticky=tkinter.W)
 
         rownum += 1
-        Label(scmain, text='Control-s'         ).grid(row=rownum, column=0, sticky=W)
-        Label(scmain, text='Save selections'   ).grid(row=rownum, column=1, sticky=W)
+        tkinter.Label(scmain, text='Control-s', font=self.font         ).grid(row=rownum, column=0, sticky=tkinter.W)
+        tkinter.Label(scmain, text='Save selections', font=self.font   ).grid(row=rownum, column=1, sticky=tkinter.W)
 
         rownum += 1
-        Label(scmain, text='Control-r'         ).grid(row=rownum, column=0, sticky=W)
-        Label(scmain, text='Read selections'   ).grid(row=rownum, column=1, sticky=W)
+        tkinter.Label(scmain, text='Control-r', font=self.font         ).grid(row=rownum, column=0, sticky=tkinter.W)
+        tkinter.Label(scmain, text='Read selections', font=self.font   ).grid(row=rownum, column=1, sticky=tkinter.W)
 
         rownum += 1
-        Label(scmain, text='Control-w'         ).grid(row=rownum, column=0, sticky=W)
-        Label(scmain, text='Close window'      ).grid(row=rownum, column=1, sticky=W)
+        tkinter.Label(scmain, text='Control-w', font=self.font         ).grid(row=rownum, column=0, sticky=tkinter.W)
+        tkinter.Label(scmain, text='Close window', font=self.font      ).grid(row=rownum, column=1, sticky=tkinter.W)
 
         scmain.pack(padx=5, pady=5, expand=1)
 
-        okframe = Frame(sc)
-        Button(okframe, text="OK", command=sc.destroy).pack()
+        okframe = tkinter.Frame(sc)
+        tkinter.Button(okframe, text="OK", command=sc.destroy, font=self.font).pack()
         sc.bind('<Return>', lambda p=self.master, w=sc: clickOK(p,w)) 
         okframe.pack()
 
@@ -231,17 +242,17 @@ class BinaryTreeCanvas:
 
     def levelDown(self, event=None) :
         self.max_depth -= 1
-        print 'levelDown, max_depth:', self.max_depth
+        print('levelDown, max_depth:', self.max_depth)
         self.drawTree()
 
     def levelUp(self, event=None) :
         self.max_depth += 1
-        print 'levelup, max_depth:', self.max_depth
+        print('levelup, max_depth:', self.max_depth)
         self.drawTree()
 
     def test(self, event=None) :
-        print "select_dictionary length:", len(self.select_dictionary)
-        print "select_dictionary:", self.select_dictionary
+        print("select_dictionary length:", len(self.select_dictionary))
+        print("select_dictionary:", self.select_dictionary)
         #print "master:", hasattr(self,'master')
         #print "tree_canvas:", hasattr(self,'tree_canvas')
 
@@ -261,7 +272,7 @@ class BinaryTreeCanvas:
         headers = ['class_num']
         spiderDictionary = {}
         key = 0
-        selectKeys = self.select_dictionary.keys()
+        selectKeys = list(self.select_dictionary.keys())
         selectKeys.sort()
 
         for counter in selectKeys:
@@ -272,33 +283,33 @@ class BinaryTreeCanvas:
         if len(self.select_dictionary) > 0 : backup(self.savefilename)
 
         if Spiderutils.writeSpiderDocFile(self.savefilename, spiderDictionary, headers=headers, append=1):
-            print 'Wrote', key, 'keys to %s' % os.path.basename(self.savefilename)
+            print('Wrote', key, 'keys to %s' % os.path.basename(self.savefilename))
         else:
-            print "Unable to write to", self.savefilename
+            print("Unable to write to", self.savefilename)
 
     def readSelections(self, event=None) :
         if os.path.exists(self.savefilename):
             goodclassdoc = Spiderutils.readSpiderDocFile(self.savefilename)
-            goodclasskeys = goodclassdoc.keys()
+            goodclasskeys = list(goodclassdoc.keys())
             found_counter = 0
 
             for key in goodclasskeys :
                 filenumber = int(goodclassdoc[key][0])
-                classnum   = int(goodclassdoc[key][1])
+                ###classnum   = int(goodclassdoc[key][1])
 
                 # map particle to label and goodclass_label.configure
-                if self.class2label.has_key(filenumber) :
+                if filenumber in self.class2label :
                     goodclass_label = self.class2label[filenumber]
                     goodclass_label.configure(background=self.good_color)
                     self.select_dictionary[filenumber] = self.select_flag
                     found_counter = found_counter + 1
                 else :
-                    print "WARNING readSelections: image", key, filenumber, "not found"
+                    print("WARNING readSelections: image", key, filenumber, "not found")
             
-            print found_counter, "keys found"
+            print(found_counter, "keys found")
 
         else:
-            print outfile, 'does not exist'
+            print(self.savefilename, 'does not exist')
 
 if __name__ == "__main__":
 
@@ -308,46 +319,44 @@ if __name__ == "__main__":
     if sys.argv[argCounter:] :
         file_example = sys.argv[argCounter:]
         nodeTemplate = Spiderutils.name2template(file_example[0])
-    #    print 'file template:', nodeTemplate
     else :
-        print
-        print "syntax: tree.py node_img001.ext {selectfile.ext max_depth margin_width canvas_width}"
-        print
+        print()
+        print("syntax: tree.py node_img001.ext {selectfile.ext max_depth margin_width canvas_width}")
+        print()
         sys.exit()
 
     argCounter = argCounter + 1
     if sys.argv[argCounter:] :
         max_depth = int(sys.argv[argCounter])
     else :
-	max_depth = 5
-    print 'max_depth:', max_depth
+        max_depth = 5
+        print('max_depth:', max_depth)
 
     argCounter = argCounter + 1
     if sys.argv[argCounter:] :
         savefilename = sys.argv[argCounter]
     else :
-    #    print "template:", nodeTemplate
         extension = os.path.splitext(nodeTemplate)[1]
         savefilename = 'goodclasses' + extension
-    print 'savefilename:', savefilename
+        print('savefilename:', savefilename)
 
     argCounter = argCounter + 1
     if sys.argv[argCounter:] :
         margin_width = int(sys.argv[argCounter])
-	print 'margin_width:', margin_width
+        print('margin_width:', margin_width)
 
     argCounter = argCounter + 1
     if sys.argv[argCounter:] :
         canvasWidth = int(sys.argv[argCounter])
-	print 'canvas_width:', canvasWidth
+        print('canvas_width:', canvasWidth)
 
     argCounter = argCounter + 1
     if sys.argv[argCounter:] :
         labelBorder = int(sys.argv[argCounter])
-	print 'image_border:', labelBorder
+        print('image_border:', labelBorder)
 
-    root = Tk()
-    root.title('tree.py')
+    root = tkinter.Tk()
+    root.title('binarytree.py')
 
     tree = BinaryTreeCanvas(root, nodeTemplate, max_depth=max_depth, savefilename=savefilename)
     tree.makeMenus()
