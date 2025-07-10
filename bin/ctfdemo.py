@@ -8,9 +8,8 @@
 # Copyright (C) 2006-2018  Health Research Inc., Menands, NY
 # Email:    spider@health.ny.gov
 
-from   Tkinter import * 
-from   math    import *
-
+import tkinter  #### from   tkinter import *
+import math  #### from   math    import *
 import Pmw
 
 class CTFplot:
@@ -26,20 +25,20 @@ class CTFplot:
                  gep       = 2):     # Gaussian envelope parameter
         self.top = master
         self.top.title("ctfdemo")
-        self.cs      = StringVar();      self.cs.set(cs)
-        self.defocus = StringVar(); self.defocus.set(defocus)
-        self.kev     = StringVar();     self.kev.set(kev)
-        self.pixsize = StringVar(); self.pixsize.set(pixelsize)
-        self.src     = StringVar();     self.src.set(src)
-        self.spread  = StringVar();  self.spread.set(spread)
-        self.acr     = StringVar();     self.acr.set(acr)
-        self.gep     = StringVar();     self.gep.set(gep)
+        self.cs      = tkinter.StringVar(); self.cs.set(cs)
+        self.defocus = tkinter.StringVar(); self.defocus.set(defocus)
+        self.kev     = tkinter.StringVar(); self.kev.set(kev)
+        self.pixsize = tkinter.StringVar(); self.pixsize.set(pixelsize)
+        self.src     = tkinter.StringVar(); self.src.set(src)
+        self.spread  = tkinter.StringVar(); self.spread.set(spread)
+        self.acr     = tkinter.StringVar(); self.acr.set(acr)
+        self.gep     = tkinter.StringVar(); self.gep.set(gep)
 
         self.vardict = {}
 
-        self.envelopeShow = IntVar()
+        self.envelopeShow = tkinter.IntVar()
         self.envelopeShow.set(0)
-        self.squared      = IntVar()
+        self.squared      = tkinter.IntVar()
         self.squared.set(0)
 
         self.n             = 250
@@ -52,31 +51,31 @@ class CTFplot:
             self.Y.append(0.0)
             self.E.append(0.0)
 
-        self.kappa = -pi**2 / (16.0 * log(2.0))
+        self.kappa = -math.pi**2 / (16.0 * math.log(2.0))
         self.infinity = 1e50
         self.compute()
         acr = self.acr.get()
         if float(acr) == 0: self.acr.set(0.1)
 
         # ------- create the menu bar -------
-        self.mBar = Frame(master, relief='raised', borderwidth=1)
+        self.mBar = tkinter.Frame(master, relief='raised', borderwidth=1)
         self.mBar.pack(side='top', fill = 'x')
 
         # Make the File menu
-        Filebtn = Menubutton(self.mBar, text='File', underline=0,
+        Filebtn = tkinter.Menubutton(self.mBar, text='File', underline=0,
                                  relief='flat')
-        Filebtn.pack(side=LEFT, padx=5, pady=5)
-        Filebtn.menu = Menu(Filebtn, tearoff=0)
+        Filebtn.pack(side=tkinter.LEFT, padx=5, pady=5)
+        Filebtn.menu = tkinter.Menu(Filebtn, tearoff=0)
         Filebtn.menu.add_separator()
         Filebtn.menu.add_command(label='Quit', underline=0,
                                      command=master.quit)
         Filebtn['menu'] = Filebtn.menu
 
         # Make the Option menu
-        Optbtn = Menubutton(self.mBar, text='Options', underline=0,
+        Optbtn = tkinter.Menubutton(self.mBar, text='Options', underline=0,
                                  relief='flat')
-        Optbtn.pack(side=LEFT, padx=5, pady=5)
-        Optbtn.menu = Menu(Optbtn, tearoff=0)
+        Optbtn.pack(side=tkinter.LEFT, padx=5, pady=5)
+        Optbtn.menu = tkinter.Menu(Optbtn, tearoff=0)
 
         Optbtn.menu.add_checkbutton(label='Grid', underline=0,
                                     command=self.showGrid)
@@ -87,8 +86,8 @@ class CTFplot:
         Optbtn['menu'] = Optbtn.menu
        
         # ------- Widgets start here -------
-        ff = Frame(master)
-        fg = Frame(ff, relief='raised', borderwidth=2) # Upper left frame for plot
+        ff = tkinter.Frame(master)
+        fg = tkinter.Frame(ff, relief='raised', borderwidth=2) # Upper left frame for plot
         self.g = Pmw.Blt.Graph(fg) 
         self.curveLine = 'model'
         self.g.line_create(self.curveLine,
@@ -118,10 +117,10 @@ class CTFplot:
         self.g.grid(row=0, column=0, sticky='nsew')
         fg.columnconfigure(0, weight=1) 
 
-        fp = Frame(ff, relief='raised', borderwidth=2)  #Upper right frame for pixsize
+        fp = tkinter.Frame(ff, relief='raised', borderwidth=2)  #Upper right frame for pixsize
 
-        plabel = Label(fp,text="pixelsize")
-        pslider = Scale(fp, orient='vertical', from_=0, to=6,
+        plabel = tkinter.Label(fp,text="pixelsize")
+        pslider = tkinter.Scale(fp, orient='vertical', from_=0, to=6,
                        tickinterval = 1,
                        resolution = 0.01, label ="",
                        variable = self.pixsize,
@@ -129,7 +128,7 @@ class CTFplot:
                        showvalue=0,
                        command=self.xupdate)
 
-        pentry = Entry(fp, textvariable=self.pixsize, width=10, background='white')
+        pentry = tkinter.Entry(fp, textvariable=self.pixsize, width=10, background='white')
         pentry.bind('<Return>', self.xupdate)
         plabel.grid(row=0, column=0)
         pentry.grid(row=1, column=0)
@@ -146,7 +145,7 @@ class CTFplot:
         self.sf = Pmw.ScrolledFrame(master, horizflex='expand', vertflex='fixed',
                                     vscrollmode='dynamic')
         f = self.sf.interior()
-        #f = Frame(master, relief='raised', borderwidth=2)
+        #f = tkinter.Frame(master, relief='raised', borderwidth=2)
         self.slider(f, start=0, end=50000, row=0,
                          label='defocus',
                          tickinterval=10000,
@@ -187,10 +186,10 @@ class CTFplot:
         #variable.trace_variable("w", self.varchange)
         #self.vardict[variable._name] = variable
         
-        lab = Label(master, text=label)
+        lab = tkinter.Label(master, text=label)
         if resolution == None:
             resolution = float(tickinterval) / 50.0
-        slider = Scale(master, orient='horizontal', from_=start, to=end,
+        slider = tkinter.Scale(master, orient='horizontal', from_=start, to=end,
                        tickinterval = tickinterval,
                        resolution = resolution, label ="",
                        variable = variable,
@@ -198,7 +197,7 @@ class CTFplot:
                        #length = self.g_width,
                        digits = digits,
                        command=self.update)
-        ent = Entry(master, textvariable=variable, width=10, background='white')
+        ent = tkinter.Entry(master, textvariable=variable, width=10, background='white')
         ent.bind('<KeyPress>', self.update)
 
         lab.grid(row=row, column=0, sticky='ne', padx=5, pady=5)
@@ -210,12 +209,12 @@ class CTFplot:
         cs    = 1e7 * float(self.cs.get())
         kv = float(self.kev.get())
         if kv != 0:
-            lmbda = 12.398 / sqrt(kv* (1022+kv))
+            lmbda = 12.398 / math.sqrt(kv* (1022+kv))
         else:
             lmbda = self.infinity
         if cs != 0:
-            f1    = 1.0 / sqrt(cs*lmbda)
-            f2    = sqrt(sqrt(cs*lmbda**3))
+            f1    = 1.0 / math.sqrt(cs*lmbda)
+            f2    = math.sqrt(math.sqrt(cs*lmbda**3))
         else:
             f1 = self.infinity
             f2 = self.infinity
@@ -232,22 +231,22 @@ class CTFplot:
         else:
             env = self.infinity
         env1  = env/f2**2
-        f     = -pi**2
+        f     = -math.pi**2
         ds1   = f1 * float(self.spread.get())
         kappa = ds1 * self.kappa
         dz1   = f1 * float(self.defocus.get())
 
-        envFlag = self.envelopeShow.get()
+        ###envFlag = self.envelopeShow.get()
         acr = float(self.acr.get())
         squared = self.squared.get()
 
         for i in range(self.n):
             ak = i * dk
             p  = ak**3 - dz1 * ak
-            ch = exp(ak*4 * kappa)
-            self.E[i] = (exp(f*q1*p**2)*ch)*2*exp(-env1*ak**2)
-            qqt = 2.0*pi*(0.25*ak**4 - 0.5*dz1*ak**2)
-            qqt1 = (1.0-acr)*sin(qqt)-acr*cos(qqt)
+            ch = math.exp(ak*4 * kappa)
+            self.E[i] = (math.exp(f*q1*p**2)*ch)*2*math.exp(-env1*ak**2)
+            qqt = 2.0*math.pi*(0.25*ak**4 - 0.5*dz1*ak**2)
+            qqt1 = (1.0-acr)*math.sin(qqt)-acr*math.cos(qqt)
             self.Y[i] = self.E[i] * qqt1
             if squared:
                 self.E[i] = (self.E[i])**2
@@ -301,18 +300,18 @@ class CTFplot:
         self.resetYaxis()
         self.update()
 
-    """ I think the only effect this has is to call update a 2nd time """
     def varchange(self, varName, index, mode):
-        variable = self.vardict[varName]
+        """ I think the only effect this has is to call update a 2nd time """
+
+        ###variable = self.vardict[varName]
         self.update()
-        #print "varchange %s" % variable.get()
 
 
 # ------- end CTFplot class definition
 
 if __name__ == '__main__':
 
-    master = Tk()
+    master = tkinter.Tk()
                  
     c = CTFplot(master)
     master.mainloop() 

@@ -10,17 +10,15 @@
 # Email:    spider@health.ny.gov
 
 import os, string, sys
-from   subprocess import getoutput
+import subprocess
 import webbrowser
 
-from   tkinter import *
-from   tkinter.filedialog   import askdirectory
-from   tkinter.messagebox   import askyesno
-from   PIL            import Image
-from   PIL            import ImageTk
+import tkinter  #### from   tkinter import *
+from   tkinter import messagebox, filedialog
+from   PIL            import Image, ImageTk
 import Pmw
-
-from   idlelib.zoomheight import ZoomHeight
+import base64
+from   idlelib import zoomheight
 from   Spider             import Spiderutils
 
 icondict = {}
@@ -35,7 +33,7 @@ def listicons(root):
     global icondict
     """Utility to display the available icons."""
     
-    win = Toplevel(root)
+    win = tkinter.Toplevel(root)
     win.title('icons')
 
     names = list(icondict.keys())
@@ -46,11 +44,11 @@ def listicons(root):
     for name in names:
         image = icondict[name]
 
-        #btn = Button(win, image=image) #, bd=1, relief="raised")
+        #btn = tkinter.Button(win, image=image) #, bd=1, relief="raised")
         #btn.grid(row=row, column=column)
-        lbl = Label(win, image=image, bd=1, relief="raised")
+        lbl = tkinter.Label(win, image=image, bd=1, relief="raised")
         lbl.grid(row=row, column=column)
-        label = Label(win, text=name)
+        label = tkinter.Label(win, text=name)
         label.grid(row=row+1, column=column)
         column = column + 1
         if column >= N/2:
@@ -63,101 +61,121 @@ def makeIcons():
                 'minusnode', 'openfolder', 'plusnode', 'procfile', 'python',
                 'spider', 'spider1', 'text', 'toobig', 'unknown', 'vol1', 'vol2', 'volume']
 
-    updir = PhotoImage(format='gif',data=
-                 'R0lGODlhGQATAIAAAAAAAP///yH5BAEAAAEALAAAAAAZABMAAAI0jI+py+0P'
-                +'DZg0JqCwDTpbCoZidXQbh5imo5ZT1HIgFEtfisO5rZfp+NqhTrziSQVMkoiM'
-                +'AgA7')
-        
-    binary = PhotoImage(format='gif',data=
-                 'R0lGODlhDAAMAKUAAAAAAAMDAwEBAQUFBQ4ODhAQEAwMDAcHB0FBQRISEgQE'
-                +'BBUVFf///xwcHD8/PzAwMCsrK/X19fn5+SkpKTIyMk9PTwsLCxgYGC8vL/z8'
-                +'/E5OTggICC4uLvDw8AYGBjk5OVBQUAkJCRkZGRoaGuLi4uDg4P39/TMzM8nJ'
-                +'yd7e3jExMQoKCv//////////////////////////////////////////////'
-                +'/////////////////////////////////yH5BAEKAD8ALAAAAAAMAAwAAAZn'
-                +'QIBwSAwIiANCwRA4IBJCxYJBZTQcjAcgAKFGJIwJlQIwVKkVy4WBARSoGYZm'
-                +'I2RwAARGR+4Z2gEDHwwgIUNrbQAeIhZDIwwkZAcADBdCayUmJwEAKClnDHEn'
-                +'AgkqFBgcHBgUJycrQQA7')
+    # In Python3, need to convert the sata string to bytes before turning it into a PhotoImage
+    updir = ImageTk.PhotoImage( format='gif',
+                               data=base64.b64decode('R0lGODlhGQATAIAAAAAAAP///yH5BAEAAAEALAAAAAAZABMAAAI0jI+py+0P'
+                                +'DZg0JqCwDTpbCoZidXQbh5imo5ZT1HIgFEtfisO5rZfp+NqhTrziSQVMkoiM'
+                                +'AgA7')
+                               )
 
-    docfile = PhotoImage(format='gif',data=
-                 'R0lGODlhDgAPAKEAAAAAAKjc/////////yH5BAEKAAMALAAAAAAOAA8AAAIq'
-                +'nI+ZwK3DggxAAQEmXQLrejTRBBqZRiInuoWsVEJva87xit62uofibygAADs=')
+    binary = ImageTk.PhotoImage( format='gif',
+                                data=base64.b64decode('R0lGODlhDAAMAKUAAAAAAAMDAwEBAQUFBQ4ODhAQEAwMDAcHB0FBQRISEgQE'
+                                +'BBUVFf///xwcHD8/PzAwMCsrK/X19fn5+SkpKTIyMk9PTwsLCxgYGC8vL/z8'
+                                +'/E5OTggICC4uLvDw8AYGBjk5OVBQUAkJCRkZGRoaGuLi4uDg4P39/TMzM8nJ'
+                                +'yd7e3jExMQoKCv//////////////////////////////////////////////'
+                                +'/////////////////////////////////yH5BAEKAD8ALAAAAAAMAAwAAAZn'
+                                +'QIBwSAwIiANCwRA4IBJCxYJBZTQcjAcgAKFGJIwJlQIwVKkVy4WBARSoGYZm'
+                                +'I2RwAARGR+4Z2gEDHwwgIUNrbQAeIhZDIwwkZAcADBdCayUmJwEAKClnDHEn'
+                                +'AgkqFBgcHBgUJycrQQA7')
+                                )
 
-    docfiles = PhotoImage(format='gif',data=
-                 'R0lGODlhDgAPAKEAAAAAAKjc/////////yH5BAEKAAMALAAAAAAOAA8AAAIv'
-                +'nI+ZwK3DggxAAQEmXQLrejTRBBqZRiInuoXSmpUQSb3qK7Ymfco9f2PpIKKi'
-                +'oQAAOw==')
+    docfile = ImageTk.PhotoImage( format='gif',
+                                 data=base64.b64decode('R0lGODlhDgAPAKEAAAAAAKjc/////////yH5BAEKAAMALAAAAAAOAA8AAAIq'
+                                  +'nI+ZwK3DggxAAQEmXQLrejTRBBqZRiInuoWsVEJva87xit62uofibygAADs=')
+                                 )
 
-    folder = PhotoImage(format='gif',data=
-                 'R0lGODlhDwANAKL/AP//z///kP/PkO/v78/PYJCQAAAAAMDAwCH5BAEAAAcA'
-                +'LAAAAAAPAA0AQAM9eFfMplAVEKoVAQtipv0XdxhkaZoFoa5E0ywUWGncpGW4'
-                +'oIvFAMSFRwT2KxoptRjollzmAs3Zc9dhWVmGBAA7')
+    docfiles = ImageTk.PhotoImage( format='gif',
+                                  data=base64.b64decode('R0lGODlhDgAPAKEAAAAAAKjc/////////yH5BAEKAAMALAAAAAAOAA8AAAIv'
+                                  +'nI+ZwK3DggxAAQEmXQLrejTRBBqZRiInuoXSmpUQSb3qK7Ymfco9f2PpIKKi'
+                                  +'oQAAOw==')
+                                  )
 
-    image = PhotoImage(format='gif',data=
-                 'R0lGODlhDgASALMAAAAIAAoCCAQMBgcMEBESDB4UDR0iETEuGUs8GVxPLmpr'
-                +'PYR5SJqNTqefa8+uZd3RiCH5BAEAAAEALAAAAAAOABIAAASQUKlFGWsYvzeX'
-                +'bcyCOc5WYUyCFMpmZs3yOGvjJh6oOCmRNKUDAqHAkRaBg+dhODgLCUtiYEhM'
-                +'CIbmobBQHAIGiQJ8SHwLiETBJyE4DQQuKZG9CuGtmWq4aCIMBSV6f0kGCAcC'
-                +'hhMJWAQBBG4FA5NwAlQHA1gHBAOWnQNgnJCTpJ+lpJUCqp6Tok1dCKOkBBEA'
-                +'ADs=')
-    
-    minusnode = PhotoImage(format='gif',data=
-                 'R0lGODlhCwALAJEAAP///39/fwAAAMDAwCH5BAkAAAMALAAAAAALAAsAAAgy'
-                +'AAcIHEhQYICDCBEaBMCwIYAACx0yhDgggMSJCwVo1PgwokSKFi+CvNixYsKE'
-                +'BVMOCAgA')
+    folder = ImageTk.PhotoImage( format='gif',
+                                data=base64.b64decode('R0lGODlhDwANAKL/AP//z///kP/PkO/v78/PYJCQAAAAAMDAwCH5BAEAAAcA'
+                                +'LAAAAAAPAA0AQAM9eFfMplAVEKoVAQtipv0XdxhkaZoFoa5E0ywUWGncpGW4'
+                                +'oIvFAMSFRwT2KxoptRjollzmAs3Zc9dhWVmGBAA7')
+                                )
 
-    openfolder = PhotoImage(format='gif',data=
-                 'R0lGODlhEAANAKL/AP//kP/PkPDw8M/PYJCQAAAAAMDAwAAAACH5BAEAAAYA'
-                +'LAAAAAAQAA0AQANCaErM+pAIQGkAIZCyjawgOBRPYZ7o6U2g0DRriGHjMC7C'
-                +'pWfBsJErgdAFibBCQ8HoxWwMAMvjbFa7fWa7HgfYbJoSADs=')
+    image = ImageTk.PhotoImage( format='gif',
+                               data=base64.b64decode('R0lGODlhDgASALMAAAAIAAoCCAQMBgcMEBESDB4UDR0iETEuGUs8GVxPLmpr'
+                                +'PYR5SJqNTqefa8+uZd3RiCH5BAEAAAEALAAAAAAOABIAAASQUKlFGWsYvzeX'
+                                +'bcyCOc5WYUyCFMpmZs3yOGvjJh6oOCmRNKUDAqHAkRaBg+dhODgLCUtiYEhM'
+                                +'CIbmobBQHAIGiQJ8SHwLiETBJyE4DQQuKZG9CuGtmWq4aCIMBSV6f0kGCAcC'
+                                +'hhMJWAQBBG4FA5NwAlQHA1gHBAOWnQNgnJCTpJ+lpJUCqp6Tok1dCKOkBBEA'
+                                +'ADs=')
+                               )
 
-    plusnode = PhotoImage(format='gif',data=
-                 'R0lGODlhCwALAJH/AP///39/fwAAAMDAwCH5BAEAAAMALAAAAAALAAsAQAIg'
-                +'nI8WwA2hmmhwLMfqBTOnrwTiKEZM90TCuqaWRIXkOBQAOw==')
+    minusnode = ImageTk.PhotoImage( format='gif',
+                                   data=base64.b64decode('R0lGODlhCwALAJEAAP///39/fwAAAMDAwCH5BAkAAAMALAAAAAALAAsAAAgy'
+                                    +'AAcIHEhQYICDCBEaBMCwIYAACx0yhDgggMSJCwVo1PgwokSKFi+CvNixYsKE'
+                                    +'BVMOCAgA')
+                                   )
 
-    procfile = PhotoImage(format='gif',data=
-                 'R0lGODlhDgAPAKEAAAAAAAD/AP///////yH5BAEKAAMALAAAAAAOAA8AAAIq'
-                +'nI+ZwK3DggxAAQEmXQLrejTRBBqZRiInuoWsVEJva87xit62uofibygAADs=')
+    openfolder = ImageTk.PhotoImage( format='gif',
+                                    data=base64.b64decode('R0lGODlhEAANAKL/AP//kP/PkPDw8M/PYJCQAAAAAMDAwAAAACH5BAEAAAYA'
+                                    +'LAAAAAAQAA0AQANCaErM+pAIQGkAIZCyjawgOBRPYZ7o6U2g0DRriGHjMC7C'
+                                    +'pWfBsJErgdAFibBCQ8HoxWwMAMvjbFa7fWa7HgfYbJoSADs=')
+                                    )
 
-    python = PhotoImage(format='gif',data=
-                 'R0lGODlhDgAPAKL/AAAAAAD/AP8AAMDAwP//AICAAAAA/wAAACH5BAEAAAMA'
-                +'LAAAAAAOAA8AQANCOAqs/kAIBkIBi5XL931DZXUbthiAcZmOGLwBUILMO4ff'
-                +'Au8sfoMhAEEoyy08nhGrNolVjKGJaCYzTVea3BUZGyQAADs=')
+    plusnode = ImageTk.PhotoImage( format='gif',
+                                  data=base64.b64decode('R0lGODlhCwALAJH/AP///39/fwAAAMDAwCH5BAEAAAMALAAAAAALAAsAQAIg'
+                                  +'nI8WwA2hmmhwLMfqBTOnrwTiKEZM90TCuqaWRIXkOBQAOw==')
+                                  )
 
-    spider = PhotoImage(format='gif',data=
-                 'R0lGODlhDwAPAKEAAFhYWKjc/wAAAP///yH5BAEKAAMALAAAAAAPAA8AAAIy'
-                +'HI6JFu3vjhOQNtnsjOBpHUhfMGICdaIWlqUg24JhF7scaaHt7G23T3rAIEKD'
-                +'4ggYFAAAOw==')
+    procfile = ImageTk.PhotoImage( format='gif',
+                                  data=base64.b64decode('R0lGODlhDgAPAKEAAAAAAAD/AP///////yH5BAEKAAMALAAAAAAOAA8AAAIq'
+                                  +'nI+ZwK3DggxAAQEmXQLrejTRBBqZRiInuoWsVEJva87xit62uofibygAADs=')
+                                  )
 
-    spider1 = PhotoImage(format='gif',data=
-                 'R0lGODlhDgAPAIAAAAAAAP///yH5BAEKAAEALAAAAAAOAA8AAAIijI95sGqM'
-                +'YJLP0UClbhiC/1zfCDrdtZBkmmoip7zxZG5IAQA7')
+    python = ImageTk.PhotoImage( format='gif',
+                                data=base64.b64decode('R0lGODlhDgAPAKL/AAAAAAD/AP8AAMDAwP//AICAAAAA/wAAACH5BAEAAAMA'
+                                +'LAAAAAAOAA8AQANCOAqs/kAIBkIBi5XL931DZXUbthiAcZmOGLwBUILMO4ff'
+                                +'Au8sfoMhAEEoyy08nhGrNolVjKGJaCYzTVea3BUZGyQAADs=')
+                                )
 
-    text = PhotoImage(format='gif',data=
-                 'R0lGODlhDgAPAKEAAAAAAP///////////yH5BAEKAAIALAAAAAAOAA8AAAIp'
-                +'lI+ZwK3CggxAATrpknfW00Qe0mUcaY5geq7sZ5QmDLGam9Jypoe+UQAAOw==')
+    spider = ImageTk.PhotoImage( format='gif',
+                                data=base64.b64decode('R0lGODlhDwAPAKEAAFhYWKjc/wAAAP///yH5BAEKAAMALAAAAAAPAA8AAAIy'
+                                +'HI6JFu3vjhOQNtnsjOBpHUhfMGICdaIWlqUg24JhF7scaaHt7G23T3rAIEKD'
+                                +'4ggYFAAAOw==')
+                                )
 
-    toobig = PhotoImage(format='gif',data=
-                 'R0lGODlhCwALAKEAAH9/f/////8AAP///yH5BAEKAAMALAAAAAALAAsAAAIf'
-                +'nI8Gy6wBoRDgxRnqAFdAzQXY94zkZp6AF6lNk8RDAQA7')
+    spider1 = ImageTk.PhotoImage( format='gif',
+                                 data=base64.b64decode('R0lGODlhDgAPAIAAAAAAAP///yH5BAEKAAEALAAAAAAOAA8AAAIijI95sGqM'
+                                  +'YJLP0UClbhiC/1zfCDrdtZBkmmoip7zxZG5IAQA7')
+                                 )
 
-    unknown = PhotoImage(format='gif',data=
-                 'R0lGODlhDAAMAKEAAP///wAAAP///////yH5BAEKAAIALAAAAAAMAAwAAAIT'
-                +'hI8JwaGL3DtyQltfVttif4FJAQA7')
+    text = ImageTk.PhotoImage( format='gif',
+                              data=base64.b64decode('R0lGODlhDgAPAKEAAAAAAP///////////yH5BAEKAAIALAAAAAAOAA8AAAIp'
+                              +'lI+ZwK3CggxAATrpknfW00Qe0mUcaY5geq7sZ5QmDLGam9Jypoe+UQAAOw==')
+                              )
 
-    vol1 = PhotoImage(format='gif',data=
-                 'R0lGODlhDgAPAMIAAAAAAP///6CgoNzc3P///////////////yH5BAEKAAQA'
-                +'LAAAAAAOAA8AAAMzSLrc/g3IKWO4uC6AswBbdwHCp1BUaRLA4L5kCbIvrM5t'
-                +'PcRrXsczmo4UFP6KLJQGwkwAADs=')
+    toobig = ImageTk.PhotoImage( format='gif',
+                                data=base64.b64decode('R0lGODlhCwALAKEAAH9/f/////8AAP///yH5BAEKAAMALAAAAAALAAsAAAIf'
+                                +'nI8Gy6wBoRDgxRnqAFdAzQXY94zkZp6AF6lNk8RDAQA7')
+                                )
 
-    vol2 = PhotoImage(format='gif',data=
-                 'R0lGODlhDgAPAKEAAAAAAICAgP///////yH5BAEKAAMALAAAAAAOAA8AAAIy'
-                +'nI+pm+DvWhCUxgPErBlgugmZaEAQV1bbSA7sirpqEAB0nWqc9YViW/KJPAjT'
-                +'g4E0FAAAOw==')
+    unknown = ImageTk.PhotoImage( format='gif',
+                                 data=base64.b64decode('R0lGODlhDAAMAKEAAP///wAAAP///////yH5BAEKAAIALAAAAAAMAAwAAAIT'
+                                  +'hI8JwaGL3DtyQltfVttif4FJAQA7')
+                                 )
 
-    volume = PhotoImage(format='gif',data=
-                 'R0lGODlhDwAPAMIAAAAAAKjc/1io/8DA/6CgoP///////////yH5BAEKAAcA'
-                +'LAAAAAAPAA8AAANBeHrQ/mCBQGttaloLRNQb1XlQKZzNoK7rSLYD0J6vbMcx'
-                +'ncaP6u4DAoAwQ8l4Dp/uxsx5GLBjLgJlsTCZ0mNxSAAAOw==')
+    vol1 = ImageTk.PhotoImage( format='gif',
+                              data=base64.b64decode('R0lGODlhDgAPAMIAAAAAAP///6CgoNzc3P///////////////yH5BAEKAAQA'
+                              +'LAAAAAAOAA8AAAMzSLrc/g3IKWO4uC6AswBbdwHCp1BUaRLA4L5kCbIvrM5t'
+                              +'PcRrXsczmo4UFP6KLJQGwkwAADs=')
+                              )
+
+    vol2 = ImageTk.PhotoImage( format='gif',
+                              data=base64.b64decode('R0lGODlhDgAPAKEAAAAAAICAgP///////yH5BAEKAAMALAAAAAAOAA8AAAIy'
+                              +'nI+pm+DvWhCUxgPErBlgugmZaEAQV1bbSA7sirpqEAB0nWqc9YViW/KJPAjT'
+                              +'g4E0FAAAOw==')
+                              )
+
+    volume = ImageTk.PhotoImage( format='gif',
+                                data=base64.b64decode('R0lGODlhDwAPAMIAAAAAAKjc/1io/8DA/6CgoP///////////yH5BAEKAAcA'
+                                +'LAAAAAAPAA8AAANBeHrQ/mCBQGttaloLRNQb1XlQKZzNoK7rSLYD0J6vbMcx'
+                                +'ncaP6u4DAoAwQ8l4Dp/uxsx5GLBjLgJlsTCZ0mNxSAAAOw==')
+                                )
 
     for icon in iconlist:
         icons[icon] = eval(icon)
@@ -271,9 +289,9 @@ class TreeNode:
             oldcursor = self.canvas['cursor']
             self.canvas['cursor'] = "watch"
             self.canvas.update()
-            self.canvas.delete(ALL)     # XXX could be more subtle
+            self.canvas.delete(tkinter.ALL)     # XXX could be more subtle
             self.draw(7, 2)
-            x0, y0, x1, y1 = self.canvas.bbox(ALL)
+            x0, y0, x1, y1 = self.canvas.bbox(tkinter.ALL)
             self.canvas.configure(scrollregion=(0, 0, x1, y1))
             self.canvas['cursor'] = oldcursor
 
@@ -357,10 +375,10 @@ class TreeNode:
         else:
             self.edit_finish()
         try:
-            label = self.label
+            self.label
         except AttributeError:
             # padding carefully selected (on Windows) to match Entry widget:
-            self.label = Label(self.canvas, text=text, bd=0, padx=2, pady=2)
+            self.label = tkinter.Label(self.canvas, text=text, bd=0, padx=2, pady=2)
         if self.selected:
             self.label.configure(fg="white", bg="darkblue")
         else:
@@ -378,9 +396,9 @@ class TreeNode:
             self.select(event)
 
     def edit(self, event=None):
-        self.entry = Entry(self.label, bd=0, highlightthickness=1, width=0)
+        self.entry = tkinter.Entry(self.label, bd=0, highlightthickness=1, width=0)
         self.entry.insert(0, self.label['text'])
-        self.entry.selection_range(0, END)
+        self.entry.selection_range(0, tkinter.END)
         self.entry.pack(ipadx=5)
         self.entry.focus_set()
         self.entry.bind("<Return>", self.edit_finish)
@@ -578,11 +596,11 @@ class FileTreeItem(TreeItem):
             if dirsize > dirmax:
                 basename = os.path.basename(self.path)
                 txt = "%s may contain a very large number of files.\nDisplay anyway?" % (basename)
-                if not askyesno("Warning", txt):
+                if not messagebox.askyesno("Warning", txt):
                     return
             
             cmd = "ls -lF %s " % self.path
-            out = getoutput(cmd)
+            out = subprocess.getoutput(cmd)
             filelisting = self.path + "\n" + out
             self.textbox.clear()
             self.textbox.settext(filelisting)
@@ -603,7 +621,7 @@ class FileTreeItem(TreeItem):
             if textsize > tmax:
                 basename = os.path.basename(self.path)
                 txt = "%s is %d bytes.\nDisplay anyway?" % (basename, textsize)
-                if not askyesno("Warning", txt):
+                if not messagebox.askyesno("Warning", txt):
                     return
             try:
                 fp = open(self.path,'r')
@@ -613,7 +631,7 @@ class FileTreeItem(TreeItem):
             fp.close()
             self.textbox.clear()
             for line in B:
-                self.textbox.component('text').insert(END, str(line))
+                self.textbox.component('text').insert(tkinter.END, str(line))
 
         # binaries
         else:
@@ -621,7 +639,7 @@ class FileTreeItem(TreeItem):
             if spidertype != 0:  #== "image":
                 infotxt = self.getSpiderInfo(self.path)
                 self.textbox.clear()
-                self.textbox.component('text').insert(END, infotxt)
+                self.textbox.component('text').insert(tkinter.END, infotxt)
                 if spidertype == "image":
                     self.putImage(self.path, clear=0)
             
@@ -654,7 +672,7 @@ class FileTreeItem(TreeItem):
         if xsize > xmax or ysize > ymax:
             basename = os.path.basename(filename)
             txt = "%s is %d x %d pixels.\nDisplay anyway?" % (basename, xsize, ysize)
-            if not askyesno("image exceeds max dimensions", txt):
+            if not messagebox.askyesno("image exceeds max dimensions", txt):
                 return
 
         if im.format == 'SPIDER':
@@ -665,8 +683,8 @@ class FileTreeItem(TreeItem):
 
         text = self.textbox.component('text')
         
-        label = Label(image=photo)
-        text.window_create(END, window=label)
+        label = tkinter.Label(image=photo)
+        text.window_create(tkinter.END, window=label)
 
         self.textbox.photolabel = label
         self.textbox.labelphoto = photo
@@ -685,14 +703,14 @@ class ScrolledCanvas:
         if 'yscrollincrement' not in opts:
             opts['yscrollincrement'] = 17
         self.master = master
-        self.frame = Frame(master)
+        self.frame = tkinter.Frame(master)
         self.frame.rowconfigure(0, weight=1)
         self.frame.columnconfigure(0, weight=1)
-        self.canvas = Canvas(self.frame, **opts)
+        self.canvas = tkinter.Canvas(self.frame, **opts)
         self.canvas.grid(row=0, column=0, sticky="nsew")
-        self.vbar = Scrollbar(self.frame, name="vbar")
+        self.vbar = tkinter.Scrollbar(self.frame, name="vbar")
         self.vbar.grid(row=0, column=1, sticky="nse")
-        self.hbar = Scrollbar(self.frame, name="hbar", orient="horizontal")
+        self.hbar = tkinter.Scrollbar(self.frame, name="hbar", orient="horizontal")
         self.hbar.grid(row=1, column=0, sticky="ews")
         self.canvas['yscrollcommand'] = self.vbar.set
         self.vbar['command'] = self.canvas.yview
@@ -702,7 +720,6 @@ class ScrolledCanvas:
         self.canvas.bind("<Key-Next>", self.page_down)
         self.canvas.bind("<Key-Up>", self.unit_up)
         self.canvas.bind("<Key-Down>", self.unit_down)
-        #if isinstance(master, Toplevel) or isinstance(master, Tk):
         self.canvas.bind("<Alt-Key-2>", self.zoom_height)
         self.canvas.focus_set()
     def page_up(self, event):
@@ -718,7 +735,7 @@ class ScrolledCanvas:
         self.canvas.yview_scroll(1, "unit")
         return "break"
     def zoom_height(self, event):
-        ZoomHeight.zoom_height(self.master)
+        zoomheight.ZoomHeight.zoom_height(self.master)
         return "break"
 
 ##################################################################
@@ -739,11 +756,11 @@ class TreeViewer:
         self.history = [self.ddir]
 
         # limits for big files, directories
-        self.imgxmax = StringVar()
-        self.imgymax = StringVar()
-        self.textmax = StringVar()
-        self.dirmax = StringVar()
-        self.htmlVar = IntVar()
+        self.imgxmax = tkinter.StringVar()
+        self.imgymax = tkinter.StringVar()
+        self.textmax = tkinter.StringVar()
+        self.dirmax = tkinter.StringVar()
+        self.htmlVar = tkinter.IntVar()
         
         self.imgxmax.set(1000)
         self.imgymax.set(1000)
@@ -779,8 +796,8 @@ class TreeViewer:
         #self.pw.configurepane(self.lpane, size=0.5)
         
         # status bar at the bottom
-        self.statusVar = StringVar()
-        self.status = Entry(self.master, textvariable=self.statusVar)
+        self.statusVar = tkinter.StringVar()
+        self.status = tkinter.Entry(self.master, textvariable=self.statusVar)
         self.status.pack(side='bottom', fill='x', padx=4, pady=2)
         self.st.status = self.statusVar # attach status bar to text box
         
@@ -789,15 +806,15 @@ class TreeViewer:
 
     # ------- the menu bar -------
     def makeMenubar(self):
-        self.mBar = Frame(self.master, relief='raised', borderwidth=1)
+        self.mBar = tkinter.Frame(self.master, relief='raised', borderwidth=1)
         self.mBar.pack(side='top', fill = 'x')
         self.balloon = Pmw.Balloon(self.master)
         
         # Make the File menu
-        Filebtn = Menubutton(self.mBar, text='File', underline=0,
+        Filebtn = tkinter.Menubutton(self.mBar, text='File', underline=0,
                                  relief='flat')
-        Filebtn.pack(side=LEFT, padx=5, pady=5)
-        Filebtn.menu = Menu(Filebtn, tearoff=0)
+        Filebtn.pack(side=tkinter.LEFT, padx=5, pady=5)
+        Filebtn.menu = tkinter.Menu(Filebtn, tearoff=0)
         Filebtn.menu.add_command(label='Directory',
                                  command=self.getDirectory)
         Filebtn.menu.add_command(label='Show Icons',
@@ -812,7 +829,7 @@ class TreeViewer:
         Filebtn['menu'] = Filebtn.menu
 
         # Entry field for current directory
-        self.dirbut = Button(self.mBar, text="Directory:", command=self.getDirectory)
+        self.dirbut = tkinter.Button(self.mBar, text="Directory:", command=self.getDirectory)
         self.dirbut.pack(side='left',padx=2)
         self.entry = Pmw.ComboBox(self.mBar,scrolledlist_items=self.history,
                                   dropdown=1)
@@ -826,7 +843,7 @@ class TreeViewer:
 
         # Button to go up one directory
         updir = self.icondict['updir']
-        Dirbtn = Button(self.mBar, image=updir, command=self.upDirectory)
+        Dirbtn = tkinter.Button(self.mBar, image=updir, command=self.upDirectory)
         Dirbtn.pack(side='left', padx=4,pady=2)
 
     def newDirectory(self, event=None):
@@ -859,7 +876,7 @@ class TreeViewer:
         self.node.destroy()
 
     def getDirectory(self):
-        newdir = askdirectory(initialdir=self.ddir, mustexist=1)
+        newdir = filedialog.askdirectory(initialdir=self.ddir, mustexist=1)
         if type(newdir) != type("string"):
             newdir = str(newdir)
         if newdir != None and newdir != "" and os.path.exists(newdir):
@@ -872,37 +889,37 @@ class TreeViewer:
         self.newDirectory()
 
     def getOptions(self):
-        win = Toplevel(self.master)
+        win = tkinter.Toplevel(self.master)
         win.title('Options')
-        f1 = Frame(win)
+        f1 = tkinter.Frame(win)
         f1.pack(side='top', fill='both', expand=1)
         width = 9
-        imglbl = Label(f1, text="Max image size:")
-        imgxentry = Entry(f1, textvariable = self.imgxmax, width=width)
-        imglbl2 = Label(f1, text=" x ")
-        imgyentry = Entry(f1, textvariable = self.imgymax, width=width)
+        imglbl = tkinter.Label(f1, text="Max image size:")
+        imgxentry = tkinter.Entry(f1, textvariable = self.imgxmax, width=width)
+        imglbl2 = tkinter.Label(f1, text=" x ")
+        imgyentry = tkinter.Entry(f1, textvariable = self.imgymax, width=width)
         imglbl.grid(row=0, column=0, sticky="e")
         imgxentry.grid(row=0, column=1, sticky="ew")
         imglbl2.grid(row=0, column=2, sticky="e")
         imgyentry.grid(row=0, column=3, sticky="ew")
 
-        txtlbl = Label(f1, text="Max text file:")
-        txtentry = Entry(f1, textvariable = self.textmax, width=width)
+        txtlbl = tkinter.Label(f1, text="Max text file:")
+        txtentry = tkinter.Entry(f1, textvariable = self.textmax, width=width)
         txtlbl.grid(row=1, column=0, sticky="e")
         txtentry.grid(row=1, column=1, sticky="ew")
         
-        dirlbl = Label(f1, text="Max directory size:")
-        direntry = Entry(f1, textvariable = self.dirmax, width=width)
+        dirlbl = tkinter.Label(f1, text="Max directory size:")
+        direntry = tkinter.Entry(f1, textvariable = self.dirmax, width=width)
         dirlbl.grid(row=2, column=0, sticky="e")
         direntry.grid(row=2, column=1, sticky="ew")
 
-        f2 = Frame(win)
+        f2 = tkinter.Frame(win)
         f2.pack(side='top', fill='both', expand=1)
-        cb = Checkbutton(f2, text="Display html files in browser",
+        cb = tkinter.Checkbutton(f2, text="Display html files in browser",
                          variable=self.htmlVar)
-        cb.pack(anchor='w', side='bottom', padx=5,pady=5, fill=X, expand=1)
+        cb.pack(anchor='w', side='bottom', padx=5,pady=5, fill=tkinter.X, expand=1)
 
-        ok = Button(win, text='Done', command=win.destroy)
+        ok = tkinter.Button(win, text='Done', command=win.destroy)
         ok.pack(side='bottom', anchor='se', padx=2, pady=2)
 # ===========================================================================
 if __name__ == '__main__':
@@ -918,7 +935,7 @@ if __name__ == '__main__':
     else:
         ddir = os.getcwd()
 
-    root = Tk()
+    root = tkinter.Tk()
     root.title("TreeView")
     icondict = makeIcons()
     tv = TreeViewer(root,icondict,ddir)

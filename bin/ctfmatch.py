@@ -8,16 +8,15 @@
 # Copyright (C) 2006-2018  Health Research Inc., Menands, NY
 # Email:    spider@health.ny.gov
 
-from   Tkinter        import * 
-from   tkFileDialog   import askopenfilename, asksaveasfilename
-import tkMessageBox
+import tkinter  #### from   tkinter        import *
+from   tkinter import filedialog, messagebox
 import Pmw
 import string, sys
-import os, time
-from   math           import *
-from   commands       import getoutput
+import os
+import math  #### from   math           import *
+import subprocess
 
-from Spider           import Spiderutils
+from Spider    import Spiderutils
 
 import webbrowser
 webpage = "http://www.wadsworth.org/spider_doc/spider/spire/tools-docs/ctfmatch.html"
@@ -29,10 +28,10 @@ def ctfhelp():
         pass
 
 def ctfabout():
-    s = "CTFmatch 1.0\n\n" + \
+    s = "CTFmatch 2.0\n\n" + \
         "A tool for analyzing the output " +\
         "from SPIDER's CTF FIND command."
-    tkMessageBox.showinfo("About CTFmatch 1.0", s)
+    messagebox.showinfo("About CTFmatch 2.0", s)
 
 def integer(astring):
     if type(astring) == type(""):
@@ -48,7 +47,7 @@ def writedoc(filename, column1=1, column2=0):
     if os.path.exists(filename):
         # if it's a doc file, try to get the last key
         if Spiderutils.isSpiderDocfile(filename):
-            lastline = getoutput("tail -1 %s" % filename)
+            lastline = subprocess.getoutput("tail -1 %s" % filename)
             if len(lastline) > 0:
                 key = 1 + int(string.split(lastline)[0])
             else:
@@ -65,7 +64,7 @@ def writedoc(filename, column1=1, column2=0):
             fp.write(data)
             fp.close()
         except:
-            print "Unable to write to %s" % filename
+            print("Unable to write to %s" % filename)
             return 0
     # if it's a new file
     else:
@@ -83,7 +82,7 @@ def writedoc(filename, column1=1, column2=0):
             fp.write(data)
             fp.close()
         except:
-           print "Unable to create %s" % filename
+           print("Unable to create %s" % filename)
            return 0
     return 1
             
@@ -92,7 +91,7 @@ def readDefocus(filename):
 #    F = spiderutils.readSpiderDocFile(filename, col_list=(1,2))
     F = Spiderutils.readdoc(filename, keys='all')
     if F == None: return []
-    keys = F.keys()
+    keys = list(F.keys())
     keys.sort()
     
     M = []
@@ -108,7 +107,7 @@ def readdoc(filename, factor=1.0, squared=1):
     if F == None: return []
     roofile = 0
     A = []; B = []; C = []; D = []; E = []
-    keys = F.keys()
+    keys = list(F.keys())
     keys.sort()
     
     # get the 1st line of data, test if roo (cols 3 & 4 = 1)
@@ -154,7 +153,7 @@ def getFiles(filetypes=None):
     if filetypes != None:
         ft.append( (filetypes,filetypes )) # "*.dat" --> ("*.dat", "*.dat")
     ft.append(("All files", "*"))
-    f = askopenfilename(multiple=1, filetypes=ft)
+    f = filedialog.askopenfilename(multiple=1, filetypes=ft)
     "f is a long string under irix, but a tuple of strings in linux. Neat, huh?"
     if type(f) == type("string"):
         return string.split(f)
@@ -171,22 +170,23 @@ class CTFplot:
     def __init__(self, master, filename=None, args=None):
         # first set defaults
         self.top = master
-        self.cs = StringVar();      self.cs.set(2.0)
-        self.defocus = StringVar(); self.defocus.set(20000)
-        self.kev = StringVar();     self.kev.set(200)
-        self.pixsize = StringVar(); self.pixsize.set(2.82)
-        self.src = StringVar();     self.src.set(0.0)
-        self.spread = StringVar();  self.spread.set(0.0)
-        self.acr = StringVar();     self.acr.set(0.1)
-        self.gep = StringVar();     self.gep.set(2.0)
+        self.cs = tkinter.StringVar();      self.cs.set(2.0)
+        self.defocus = tkinter.StringVar(); self.defocus.set(20000)
+        self.kev = tkinter.StringVar();     self.kev.set(200)
+        self.pixsize = tkinter.StringVar(); self.pixsize.set(2.82)
+        self.src = tkinter.StringVar();     self.src.set(0.0)
+        self.spread = tkinter.StringVar();  self.spread.set(0.0)
+        self.acr = tkinter.StringVar();     self.acr.set(0.1)
+        self.gep = tkinter.StringVar();     self.gep.set(2.0)
         self.defocusfile = ""
         self.tfed = []
         got_pixsize = 0
         got_kev = 0
         max_defocus = 60000
+
         # then process args, if any
         if args != None:
-            keys = args.keys()
+            keys = list(args.keys())
             for key in keys:
                 k = key.replace('-','') # delete minus sign
                 if k == "defocus":
@@ -203,7 +203,7 @@ class CTFplot:
                         elif k == 'kev' and float(self.kev.get()) != 0:
                             got_kev = 1
                     except:
-                        print "key %s not recognized" % key
+                        print("key %s not recognized" % key)
 
         self.multfactor = 1.0  #1000.0  # for input data
         self.datamax = 1.0  # used to control height of model
@@ -211,32 +211,36 @@ class CTFplot:
         self.modelmax = 1.0
         self.factor = 1.0
         self.askParms = 1
+
         # don't start with parameter window if have pixsize and kev
         if got_pixsize and got_kev:
             self.askParms = 0        
         
         self.max_spat_freq = 1.0 / (2.0 * float(self.pixsize.get()))
-        self.kappa = -pi**2 / (16.0 * log(2.0))
+        self.kappa = -math.pi**2 / (16.0 * math.log(2.0))
         self.infinity = 1e50
-        self.ymax = StringVar()
-        self.xmin = StringVar() ; self.xmin.set(0)
-        self.modymax = StringVar()
+        self.ymax = tkinter.StringVar()
+        self.xmin = tkinter.StringVar() ; self.xmin.set(0)
+        self.modymax = tkinter.StringVar()
         self.n = 250
+
         # arrays for holding data columns
         self.arr = {'frq':[], 'bgd':[], 'sub':[], 'env':[], 'roo':[]}
         self.showlist = {'bgd':1, 'sub':1, 'env':1, 'roo':1, 'model':1}
+
         # variables for checkbuttons in menus
-        self.showRoo = IntVar() ; self.showRoo.set(1)
-        self.showBgd = IntVar() ; self.showBgd.set(1)
-        self.showSub = IntVar() ; self.showSub.set(1)
-        self.showEnv = IntVar() ; self.showEnv.set(1)
-        self.showMod = IntVar() ; self.showMod.set(1)
+        self.showRoo = tkinter.IntVar() ; self.showRoo.set(1)
+        self.showBgd = tkinter.IntVar() ; self.showBgd.set(1)
+        self.showSub = tkinter.IntVar() ; self.showSub.set(1)
+        self.showEnv = tkinter.IntVar() ; self.showEnv.set(1)
+        self.showMod = tkinter.IntVar() ; self.showMod.set(1)
         self.colors = {'bgd':'#00cc00', 'sub':'red', 'env':'#9999ff',
                        'roo':'#ff9900',  'model':'white'}
         # by default, data is squared as it is read in 
-        self.squared = IntVar() ; self.squared.set(1)
+        self.squared = tkinter.IntVar() ; self.squared.set(1)
+
         # whether to use the empirical envelope
-        self.envelope = IntVar() ; self.envelope.set(0)
+        self.envelope = tkinter.IntVar() ; self.envelope.set(0)
         self.roofile = ""
         self.tfedfile = ""
         self.savefile = ""
@@ -269,15 +273,15 @@ class CTFplot:
         self.compute() # generate the model
 
         # ------- create the menu bar -------
-        self.mBar = Frame(master, relief='raised', borderwidth=1)
+        self.mBar = tkinter.Frame(master, relief='raised', borderwidth=1)
         self.mBar.pack(side='top', fill = 'x')
         self.balloon = Pmw.Balloon(self.top)
         
         # Make the File menu
-        Filebtn = Menubutton(self.mBar, text='File', underline=0,
+        Filebtn = tkinter.Menubutton(self.mBar, text='File', underline=0,
                                  relief='flat')
-        Filebtn.pack(side=LEFT, padx=5, pady=5)
-        Filebtn.menu = Menu(Filebtn, tearoff=0)
+        Filebtn.pack(side=tkinter.LEFT, padx=5, pady=5)
+        Filebtn.menu = tkinter.Menu(Filebtn, tearoff=0)
         Filebtn.menu.add_command(label='Open TF ED file',
                                  command=self.callOpenFile)
         Filebtn.menu.add_command(label='Open File series',
@@ -293,9 +297,9 @@ class CTFplot:
 
         
         # Make the Option menu
-        Optbtn = Menubutton(self.mBar, text='Options', relief='flat')
-        Optbtn.pack(side=LEFT, padx=5, pady=5)
-        Optbtn.menu = Menu(Optbtn, tearoff=0)
+        Optbtn = tkinter.Menubutton(self.mBar, text='Options', relief='flat')
+        Optbtn.pack(side=tkinter.LEFT, padx=5, pady=5)
+        Optbtn.menu = tkinter.Menu(Optbtn, tearoff=0)
 
         Optbtn.menu.add_command(label='Parameters', underline=0,
                                     command=self.callSetParms)
@@ -315,9 +319,9 @@ class CTFplot:
                             #label='Reset Ymax', command=self.showGrid)
         
         # Make the Show menu
-        Showbtn = Menubutton(self.mBar, text='Show', relief='flat')
-        Showbtn.pack(side=LEFT, padx=5, pady=5)
-        Showbtn.menu = Menu(Showbtn, tearoff=0)
+        Showbtn = tkinter.Menubutton(self.mBar, text='Show', relief='flat')
+        Showbtn.pack(side=tkinter.LEFT, padx=5, pady=5)
+        Showbtn.menu = tkinter.Menu(Showbtn, tearoff=0)
 
         Showbtn.menu.add_checkbutton(label='1D spectrum', 
                                     background = 'black',
@@ -357,9 +361,9 @@ class CTFplot:
         Showbtn['menu'] = Showbtn.menu
         
         # Help menu
-        Helpbtn = Menubutton(self.mBar, text='Help', relief='flat')
-        Helpbtn.pack(side=RIGHT, padx=5, pady=5)
-        Helpbtn.menu = Menu(Helpbtn, tearoff=0)
+        Helpbtn = tkinter.Menubutton(self.mBar, text='Help', relief='flat')
+        Helpbtn.pack(side=tkinter.RIGHT, padx=5, pady=5)
+        Helpbtn.menu = tkinter.Menu(Helpbtn, tearoff=0)
 
         Helpbtn.menu.add_command(label='Help', command=ctfhelp)
         Helpbtn.menu.add_command(label='About', command=ctfabout)
@@ -370,14 +374,14 @@ class CTFplot:
         self.g_width = 446 #int(self.g.extents("plotwidth"))
         self.g_height = 150 #int(self.g.extents("plotheight"))
 
-        ff = Frame(master) # frame that holds everything
+        ff = tkinter.Frame(master) # frame that holds everything
         
         " yscale slider "
-        fy = Frame(ff, relief='raised', borderwidth=2)
-        ylabel = Label(fy,text="y max")
+        fy = tkinter.Frame(ff, relief='raised', borderwidth=2)
+        ylabel = tkinter.Label(fy,text="y max")
         ymax = string.atof(self.ymax.get())
 
-        self.yslider = Scale(fy, orient='vertical', from_= ymax, to=0.0,
+        self.yslider = tkinter.Scale(fy, orient='vertical', from_= ymax, to=0.0,
                        tickinterval = ymax/6.0,
                        resolution = 0.01,   #ymax/30.0,
                        label ="",
@@ -387,10 +391,10 @@ class CTFplot:
                        command=self.yupdate)
 
         " model height scale "
-        mlabel = Label(fy,text="model\nheight")
+        mlabel = tkinter.Label(fy,text="model\nheight")
         mmax = 1.0   #string.atof(self.modymax.get())
 
-        self.mslider = Scale(fy, orient='vertical', from_= mmax, to=0.0,
+        self.mslider = tkinter.Scale(fy, orient='vertical', from_= mmax, to=0.0,
                        tickinterval = mmax/5.0,
                        resolution = mmax/50.0,
                        label ="",
@@ -406,7 +410,7 @@ class CTFplot:
 
 
         " the main plot "
-        fg = Frame(ff, relief='raised', borderwidth=2)
+        fg = tkinter.Frame(ff, relief='raised', borderwidth=2)
         self.g = Pmw.Blt.Graph(fg, plotbackground="black" ) 
         self.curves = ['bgd','sub','env', 'roo']
         i = 0
@@ -433,7 +437,7 @@ class CTFplot:
         self.xmin.set(xmin)
         xmax = self.max_spat_freq
 
-        xslider = Scale(fg, orient='horizontal', from_= xmin, to=xmax,
+        xslider = tkinter.Scale(fg, orient='horizontal', from_= xmin, to=xmax,
                        tickinterval = xmax/4.0,
                        resolution = 0.001,   #xmax/40.0,
                        label ="x min",
@@ -442,15 +446,15 @@ class CTFplot:
                        showvalue=0,
                        command=self.xminupdate)
 
-        xbutton = Button(fg, text="reset ymax", command=self.resetYmax)
+        xbutton = tkinter.Button(fg, text="reset ymax", command=self.resetYmax)
 
-        saveBut = Button(fg, text='Save Defocus', command=self.saveDefocus)
+        saveBut = tkinter.Button(fg, text='Save Defocus', command=self.saveDefocus)
         
-        fl = Frame(fg, relief='sunken', borderwidth=2)
-        #self.roolabel = Label(fl, text=self.roofile, background=filebgdcolor)
-        self.tfedlabel = Label(fl, text=os.path.basename(self.tfedfile))
-        self.defocuslabel = Label(fl, text=os.path.basename(self.defocusfile))
-        self.savelabel = Label(fl, text=os.path.basename(self.savefile))
+        fl = tkinter.Frame(fg, relief='sunken', borderwidth=2)
+        #self.roolabel = tkinter.Label(fl, text=self.roofile, background=filebgdcolor)
+        self.tfedlabel = tkinter.Label(fl, text=os.path.basename(self.tfedfile))
+        self.defocuslabel = tkinter.Label(fl, text=os.path.basename(self.defocusfile))
+        self.savelabel = tkinter.Label(fl, text=os.path.basename(self.savefile))
         self.tfedlabel.pack(side='top', padx=10, pady=5)
         self.defocuslabel.pack(side='top', padx=10, pady=5)
         self.savelabel.pack(side='top', padx=10, pady=5)
@@ -467,7 +471,7 @@ class CTFplot:
 
         # ------ the set of sliders -------
 
-        f = Frame(ff, relief='raised', borderwidth=2)
+        f = tkinter.Frame(ff, relief='raised', borderwidth=2)
         self.sliderlist = []
         self.slider(f, start=0, end=max_defocus, row=0,
                          label='defocus',
@@ -511,7 +515,7 @@ class CTFplot:
         ###### end init ------------------------------------------
 
     def callSetParms(self):
-        w = Toplevel(self.top)
+        w = tkinter.Toplevel(self.top)
         self.ParmWindow = w
         self.setParms(w)
         self.top.wait_window(w) # wait for window to be destroyed
@@ -520,15 +524,15 @@ class CTFplot:
 
     def setParms(self, win=None):
         win.title('Set parameters')
-        f = Frame(win)
-        labpx = Label(f,text='pixel size(A): ')
-        labkv = Label(f,text='electron energy (kev): ')
-        labcs = Label(f,text='spherical aberration: ')
-        labac = Label(f,text='amplitude contrast ratio: ')
-        entpx = Entry(f, textvariable=self.pixsize, width=10, background='white')
-        entkv = Entry(f, textvariable=self.kev, width=10, background='white')
-        entcs = Entry(f, textvariable=self.cs, width=10, background='white')
-        entac = Entry(f, textvariable=self.acr, width=10, background='white')
+        f = tkinter.Frame(win)
+        labpx = tkinter.Label(f,text='pixel size(A): ')
+        labkv = tkinter.Label(f,text='electron energy (kev): ')
+        labcs = tkinter.Label(f,text='spherical aberration: ')
+        labac = tkinter.Label(f,text='amplitude contrast ratio: ')
+        entpx = tkinter.Entry(f, textvariable=self.pixsize, width=10, background='white')
+        entkv = tkinter.Entry(f, textvariable=self.kev, width=10, background='white')
+        entcs = tkinter.Entry(f, textvariable=self.cs, width=10, background='white')
+        entac = tkinter.Entry(f, textvariable=self.acr, width=10, background='white')
         labpx.grid(row=0, column=0, sticky='e')
         labkv.grid(row=1, column=0, sticky='e')
         labcs.grid(row=2, column=0, sticky='e')
@@ -538,8 +542,8 @@ class CTFplot:
         entcs.grid(row=2, column=1)
         entac.grid(row=3, column=1)
         f.pack(side='top')
-        fb = Frame(win)
-        b = Button(fb, text='ok', command=win.destroy)
+        fb = tkinter.Frame(win)
+        b = tkinter.Button(fb, text='ok', command=win.destroy)
         b.pack(padx=5, pady=5)
         fb.pack()
         self.askParms = 0
@@ -547,10 +551,10 @@ class CTFplot:
     def slider(self, master, start=0, end=10, row=0, label="",
                tickinterval=1, resolution=None, digits=0,variable = None):
 
-        lab = Label(master, text=label)
+        lab = tkinter.Label(master, text=label)
         if resolution == None:
             resolution = float(tickinterval) / 20.0
-        slider = Scale(master, orient='horizontal', from_=start, to=end,
+        slider = tkinter.Scale(master, orient='horizontal', from_=start, to=end,
                        tickinterval = tickinterval,
                        resolution = resolution, label ="",
                        variable = variable,
@@ -559,24 +563,23 @@ class CTFplot:
                        digits = digits,
                        command=self.update)
         self.sliderlist.append(slider)
-        ent = Entry(master, textvariable=variable, width=10, background='white')
+        ent = tkinter.Entry(master, textvariable=variable, width=10, background='white')
         ent.bind('<KeyPress>', self.update)
 
         lab.grid(row=row, column=0, sticky='w', padx=5, pady=5)
         ent.grid(row=row, column=1, sticky='w', padx=5, pady=5)
         slider.grid(row=row, column=2, sticky='ew', padx=5, pady=5)
-        
 
     def compute(self):
         cs    = 1e7 * float(self.cs.get())
         kv = float(self.kev.get())
         if kv != 0:
-            lmbda = 12.398 / sqrt(kv* (1022+kv))
+            lmbda = 12.398 / math.sqrt(kv* (1022+kv))
         else:
             lmbda = self.infinity
         if cs != 0:
-            f1    = 1.0 / sqrt(cs*lmbda)
-            f2    = sqrt(sqrt(cs*lmbda**3))
+            f1    = 1.0 / math.sqrt(cs*lmbda)
+            f2    = math.sqrt(math.sqrt(cs*lmbda**3))
         else:
             f1 = self.infinity
             f2 = self.infinity
@@ -593,7 +596,7 @@ class CTFplot:
         else:
             env = self.infinity
         env1  = env/f2**2
-        f     = -pi**2
+        f     = -math.pi**2
         ds1   = f1 * float(self.spread.get())
         kappa = ds1 * self.kappa
         dz1   = f1 * float(self.defocus.get())
@@ -607,10 +610,10 @@ class CTFplot:
         for i in range(self.n):
             ak = i * dk
             p  = ak**3 - dz1 * ak
-            ch = exp(ak*4 * kappa)
-            self.E[i] = (exp(f*q1*p**2)*ch)*2*exp(-env1*ak**2)
-            qqt = 2.0*pi*(0.25*ak**4 - 0.5*dz1*ak**2)
-            qqt1 = (1.0-acr)*sin(qqt)-acr*cos(qqt)
+            ch = math.exp(ak*4 * kappa)
+            self.E[i] = (math.exp(f*q1*p**2)*ch)*2*math.exp(-env1*ak**2)
+            qqt = 2.0*math.pi*(0.25*ak**4 - 0.5*dz1*ak**2)
+            qqt1 = (1.0-acr)*math.sin(qqt)-acr*math.cos(qqt)
             if not use_emp_envelope:
                 self.Y[i] = self.E[i] * qqt1
             else:
@@ -657,7 +660,7 @@ class CTFplot:
         self.showCurves()
 
     def showCurves(self):
-        curves = self.showlist.keys()
+        curves = list(self.showlist.keys())
         show = []
         for curve in curves:
             if self.showlist[curve]:
@@ -674,7 +677,7 @@ class CTFplot:
                 break
         # i is index
         M = []
-        keys = self.showlist.keys()
+        keys = list(self.showlist.keys())
         for list in keys:
             if list != 'frq' and list != 'model':
                 if self.showlist[list] and len(self.arr[list]) > i:
@@ -748,12 +751,12 @@ class CTFplot:
 
     def openFile(self, filename=None):
         if filename == None or filename == "":
-            filename = askopenfilename()
+            filename = filedialog.askopenfilename()
             if filename == None or filename == "":
                 return 0
         A = readdoc(filename, self.multfactor, self.squared.get())
         if len(A) == 0:
-            print "openFile: error - fileread returned empty list"
+            print("openFile: error - fileread returned empty list")
             return 0
         elif len(A) == 1:  # roofile
             self.arr['roo'] = A[0] ; self.showRoo.set(1)
@@ -797,8 +800,8 @@ class CTFplot:
             return []
         displaylist = []
         if self.defDict:
-            dkeys = self.defDict.keys()
-            fkeys = self.fileDict.keys()
+            dkeys = list(self.defDict.keys())
+            fkeys = list(self.fileDict.keys())
             if sort == 'defocus':
                 # create a list of (defocus, file) pairs, and sort it
                 deflist = []
@@ -820,7 +823,7 @@ class CTFplot:
                         displaylist.append("%s     %s" % (file, defocus))
         else:
             # no defocus info, only filenames
-            fkeys = self.fileDict.keys()
+            fkeys = list(self.fileDict.keys())
             fkeys.sort()
             for file in fkeys:
                 displaylist.append(self.fileDict[file][0])
@@ -856,12 +859,12 @@ class CTFplot:
         if hasattr(self,'boxwin') and self.boxwin.winfo_exists():
             self.makedisplaylist()
         else:
-            self.boxwin = Toplevel(self.top)
-            flabels = Frame(self.boxwin)
-            bf = Button(flabels, text='Files',
+            self.boxwin = tkinter.Toplevel(self.top)
+            flabels = tkinter.Frame(self.boxwin)
+            bf = tkinter.Button(flabels, text='Files',
                         command=lambda self=self,s='files':self.makedisplaylist(sort=s))
             bf.pack(side='left',padx=5,pady=5)
-            bd = Button(flabels, text='Defocus',
+            bd = tkinter.Button(flabels, text='Defocus',
                         command=self.defocusButtonfunc)
             bd.pack(side='right',padx=5,pady=5)
             flabels.pack(side='top')
@@ -869,9 +872,9 @@ class CTFplot:
                                            items = self.displaylist,
                                            selectioncommand=self.select)
             self.box.pack(side='top', padx=5, pady=5, fill='both', expand=1)
-            #d = Button(self.boxwin, text='Read Defocus', command=self.openDefocus)
+            #d = tkinter.Button(self.boxwin, text='Read Defocus', command=self.openDefocus)
             #d.pack(side='left', padx=5, pady=5)
-            b = Button(self.boxwin, text='Done', command=self.boxwin.destroy)
+            b = tkinter.Button(self.boxwin, text='Done', command=self.boxwin.destroy)
             b.pack(side='bottom', padx=5, pady=5)
             #self.box.focus_set()
 
@@ -897,11 +900,11 @@ class CTFplot:
     def openDefocus(self, filename=None):
         " expects 1st column=mic #, 2nd col=defocus "
         if filename == None:
-            filename = askopenfilename(title="Open doc file with defocus values")
+            filename = filedialog.askopenfilename(title="Open doc file with defocus values")
         if filename == "" or filename == None or len(filename) == 0:
             return 0
         if not os.path.exists(filename):
-            print "Unable to find defocus file: %s" % filename
+            print("Unable to find defocus file: %s" % filename)
             return 0
 
         D = readDefocus(filename) # list of (mic#, defocus) pairs
@@ -919,11 +922,11 @@ class CTFplot:
         return 1
 
     def saveDefocusAs(self):
-        filename = asksaveasfilename()
+        filename = filedialog.asksaveasfilename()
         try:
             os.remove(filename)
         except:
-            print "unable to write to %s" % filename
+            print("unable to write to %s" % filename)
         if filename != "":
             self.saveDefocus(filename=filename)
 
@@ -932,14 +935,14 @@ class CTFplot:
         if filename != None:
             self.savefile = filename
         if self.savefile == "":
-            filename = asksaveasfilename()
+            filename = filedialog.asksaveasfilename()
             if filename == "":
                 return 
             self.savefile = filename
         self.setFileLabels()
 
         if self.tfedfile == "":
-            print "defocus data will be saved to %s" % self.savefile
+            print("defocus data will be saved to %s" % self.savefile)
             return
 
         micnum = self.filenumber(os.path.basename(self.tfedfile))
@@ -949,7 +952,7 @@ class CTFplot:
         if os.path.exists(outfile):
             # try to replace the line
             d = Spiderutils.readdoc(outfile, keys='all')
-            keys = d.keys()
+            keys = list(d.keys())
             found = 0
             for k in keys:
                 mic = d[k][0]
@@ -964,7 +967,7 @@ class CTFplot:
         else:
             Spiderutils.writedoc(outfile,columns=[[micnum],[defocus]],headers=headers)
         #if writedoc(self.savefile, column1=micnum, column2=defocus):
-        print "defocus %s saved to %s" % (defocus, outfile)
+        print("defocus %s saved to %s" % (defocus, outfile))
     
     def showGrid(self):
         self.g.grid_toggle()
@@ -1021,7 +1024,7 @@ def printhelp():
            "e.g.: ctfmatch.py -cs 2.20 -kev 200 -pixsize 2.82\n" + \
            "e.g.: ctfmatch.py ctf003.dat -pixsize 3.76 -defocus defocus.acn -tfed ctf*\n" + \
            "      ctfmatch.py -help     (prints this message)"
-    print help
+    print(help)
 
 if __name__ == '__main__':
 
@@ -1040,7 +1043,7 @@ if __name__ == '__main__':
             filename = ""
         args = getopts(argv)
  
-    master = Tk()
+    master = tkinter.Tk()
     master.title("CTF Match")
                  
     if nargs == 0:

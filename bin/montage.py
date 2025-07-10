@@ -132,7 +132,7 @@ class montage:
         self.sizeVar.set(1)
         self.showVar = tkinter.IntVar()
         self.showVar.set(self.useLabels)
-        self.bd = 2  # Border around images
+        self.bd = 3  # Border around images
         sysbgd = self.systembackground = "#d9d9d9"
         actbgd = "#ececec"
 
