@@ -137,12 +137,13 @@ class montage:
         actbgd = "#ececec"
 
         # a selection class = ( int(value), 'color', 'key', 'label')
+        # colors from https://jfly.uni-koeln.de/color/
 
         self.selectClasses = {}
         self.selectClasses['0'] = selectionClass(0,'0',sysbgd,'deselect', actbgd)
-        self.selectClasses['1'] = selectionClass(1,'1','green','class 1', 'light green')
-        self.selectClasses['2'] = selectionClass(2,'2','red','class 2', 'pink')
-        self.selectClasses['3'] = selectionClass(3,'3','blue','class 3', 'light blue')
+        self.selectClasses['1'] = selectionClass(1,'1','#009e74','class 1', '#6a9e90')  # bluish green
+        self.selectClasses['2'] = selectionClass(2,'2','#d65d00','class 2', '#d6996b')  # vermillion
+        self.selectClasses['3'] = selectionClass(3,'3','#0071b2','class 3', '#6b98b3')  # blue
         self.selectedColor = tkinter.StringVar()
         self.selectedColor.set('1')
         self.selectedColor.trace_variable('w', self.selectcallback)
