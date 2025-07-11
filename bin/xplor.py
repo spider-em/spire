@@ -13,12 +13,13 @@ import os, string, sys
 import subprocess
 import webbrowser
 
-import tkinter  #### from   tkinter import *
+import tkinter
 from   tkinter import messagebox, filedialog
 from   PIL            import Image, ImageTk
 import Pmw
 import base64
 from   idlelib import zoomheight
+import platform
 from   Spider             import Spiderutils
 
 icondict = {}
@@ -319,7 +320,6 @@ class TreeNode:
             self.canvas.create_line(x+9, cy+7, cx, cy+7, fill="gray50")
             cy = child.draw(cx, cy)
             if child.item._IsExpandable():
-                ####
                 if os.path.getsize(child.item.path) > MAXDIRSIZE:
                     iconname = "toobig"
                     image = self.geticonimage(iconname)
@@ -363,8 +363,6 @@ class TreeNode:
         if labeltext:
             id = self.canvas.create_text(textx, texty, anchor="nw",
                                          text=labeltext)
-            #self.canvas.tag_bind(id, "<1>", self.select)
-            #self.canvas.tag_bind(id, "<Double-1>", self.flip)
             x0, y0, x1, y1 = self.canvas.bbox(id)
             textx = max(x1, 200) + 10
         text = self.item.GetText() or "<no text>"
@@ -534,7 +532,11 @@ class FileTreeItem(TreeItem):
                 return "python"
             if ext.lower() in self.imagetypes:
                 return "image"
-            typ = Spiderutils.istextfile(self.path)
+            try:
+                typ = Spiderutils.istextfile(self.path)
+            except UnicodeDecodeError as ude:
+                print("UnicodeDecodeError:", ude, os.path.basename(self.path))
+                exit()
             if typ == 1:
                 if Spiderutils.isSpiderDocfile(self.path):
                     return "docfile"
@@ -545,15 +547,16 @@ class FileTreeItem(TreeItem):
                 else:
                     return "text"
             elif typ == -1:
+                print(os.path.basename(self.path), "unknown")
                 return "unknown"
-            
-            spi = Spiderutils.isSpiderBin(self.path)
-            if spi == "image" or spi == "Fourier" or spi == "stack":
-                return "spider"
-            elif spi == "volume":
-                return "volume"
-            
-            return "binary"   # i.e. a non-spider binary file
+            else:
+                spi = Spiderutils.isSpiderBin(self.path)
+                if spi == "image" or spi == "Fourier" or spi == "stack":
+                    return "spider"
+                elif spi == "volume":
+                    return "volume"
+
+                return "binary"   # i.e. a non-spider binary file
 
     def IsExpandable(self):
         return os.path.isdir(self.path)
@@ -737,12 +740,27 @@ class ScrolledCanvas:
     def zoom_height(self, event):
         zoomheight.ZoomHeight.zoom_height(self.master)
         return "break"
-
-##################################################################
-#
-# main TreeView Class
+    def _on_mousewheel(self, event):
+        if platform.system() == 'Windows' or platform.system() == 'Darwin':
+            self.yview_scroll(int(-1*(event.delta/120)), "units")
+            return "break"  # prevent further handling, i.e., innate scrolling behavior
+        elif platform.system() == 'Linux':
+            # For Linux (event.num is 4 for up, 5 for down)
+            if event.num == 4:
+                self.canvas.yview_scroll(-5, "units")
+            elif event.num == 5:
+                self.canvas.yview_scroll(5, "units")
+            return "break"  # prevent further handling, i.e., innate scrolling behavior
+        else:
+            print(f"WARNING! Don't know operation system '{platform.system()}'")
+            return
 
 class TreeViewer:
+    ##################################################################
+    #
+    # main TreeView Class
+    #
+    ##################################################################
 
     def __init__(self, master, icondict, directory=None):
         self.master = master
@@ -777,6 +795,11 @@ class TreeViewer:
         self.lpane = self.pw.add('tree')
         self.sc = ScrolledCanvas(self.lpane, bg="white", highlightthickness=0,
                                  takefocus=1)
+
+        # Scroll within left pane
+        self.lpane.bind("<Enter>", self.activate_mousewheel)
+        self.lpane.bind("<Leave>", self.deactivate_mousewheel)
+
         self.sc.frame.pack(expand=1, fill="both", padx = 4, pady = 4)
         self.sc.canvas.icondict = icondict  # make icondict an attribute of the canvas
 
@@ -793,7 +816,6 @@ class TreeViewer:
         self.st.limits = self.limits
 
         self.pw.pack(side='top', expand = 1, fill='both')
-        #self.pw.configurepane(self.lpane, size=0.5)
         
         # status bar at the bottom
         self.statusVar = tkinter.StringVar()
@@ -802,7 +824,6 @@ class TreeViewer:
         self.st.status = self.statusVar # attach status bar to text box
         
         self.initTree(self.ddir)
-
 
     # ------- the menu bar -------
     def makeMenubar(self):
@@ -815,12 +836,10 @@ class TreeViewer:
                                  relief='flat')
         Filebtn.pack(side=tkinter.LEFT, padx=5, pady=5)
         Filebtn.menu = tkinter.Menu(Filebtn, tearoff=0)
-        Filebtn.menu.add_command(label='Directory',
+        Filebtn.menu.add_command(label='Open directory',
                                  command=self.getDirectory)
-        Filebtn.menu.add_command(label='Show Icons',
-                                 command=lambda m=self.master: listicons(m))
-        Filebtn.menu.add_command(label='Clear',
-                                 command=self.clearCanvas)
+        ##Filebtn.menu.add_command(label='Clear',
+                                 ##command=self.clearCanvas)
         Filebtn.menu.add_command(label='Options',
                                  command=self.getOptions)
         Filebtn.menu.add_separator()
@@ -845,6 +864,14 @@ class TreeViewer:
         updir = self.icondict['updir']
         Dirbtn = tkinter.Button(self.mBar, image=updir, command=self.upDirectory)
         Dirbtn.pack(side='left', padx=4,pady=2)
+
+        # Make the Help menu
+        Helpbtn = tkinter.Menubutton(self.mBar, text='Help', underline=0, relief='flat')
+        Helpbtn.pack(side=tkinter.RIGHT, padx=5, pady=5)
+        Helpbtn.menu = tkinter.Menu(Helpbtn, tearoff=0)
+        Helpbtn.menu.add_command(label='List Icons',
+                                 command=lambda m=self.master: listicons(m))
+        Helpbtn['menu'] = Helpbtn.menu
 
     def newDirectory(self, event=None):
         if event != None:
@@ -921,6 +948,19 @@ class TreeViewer:
 
         ok = tkinter.Button(win, text='Done', command=win.destroy)
         ok.pack(side='bottom', anchor='se', padx=2, pady=2)
+
+    def activate_mousewheel(self, event):
+        # Bind mousewheel to the left pane only when mouse is over it
+        self.lpane.bind_all("<MouseWheel>", self.sc._on_mousewheel)  # Windows/Mac
+        self.lpane.bind_all("<Button-4>", self.sc._on_mousewheel)    # Linux scroll up
+        self.lpane.bind_all("<Button-5>", self.sc._on_mousewheel)    # Linux scroll down
+
+    def deactivate_mousewheel(self, event):
+        # Unbind mousewheel when mouse leaves the left pane
+        self.lpane.unbind_all("<MouseWheel>")
+        self.lpane.unbind_all("<Button-4>")
+        self.lpane.unbind_all("<Button-5>")
+
 # ===========================================================================
 if __name__ == '__main__':
     
@@ -937,6 +977,7 @@ if __name__ == '__main__':
 
     root = tkinter.Tk()
     root.title("TreeView")
+    root.geometry("1280x456")
     icondict = makeIcons()
     tv = TreeViewer(root,icondict,ddir)
     root.mainloop()
