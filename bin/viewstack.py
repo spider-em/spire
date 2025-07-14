@@ -4,9 +4,9 @@
 #    2024-03-07 -- arrows bound to previous and next frame
 #    2024-03-07 -- Python3 update
 
-from   tkinter import *
-from   PIL     import Image
-from   PIL     import ImageTk
+import tkinter
+###from   tkinter import *
+from   PIL     import Image, ImageTk
 
 import os, sys
 
@@ -37,37 +37,37 @@ class Viewer:
                     print()
                     print(vars(im))
                     print()
-                    print(f"  Exiting...\n")
+                    print("  Exiting...\n")
                     exit()
                 labeltext += " : stack file with %d images" % self.nimages
             bim = im.convert2byte()
         self.size = im.size
 
-        self.title = Label(text=labeltext)
+        self.title = tkinter.Label(text=labeltext)
         self.title.pack()
                 
         self.tkimage = ImageTk.PhotoImage(bim, palette=256)
         self.tmp = ""
         
-        self.lbl = Label(master, image=self.tkimage)
+        self.lbl = tkinter.Label(master, image=self.tkimage)
         self.lbl.pack(side='top')
 
         # the button frame
-        fr = Frame(master)
+        fr = tkinter.Frame(master)
         fr.pack(side='top', expand=1, fill='x')
-        back = Button(fr, text="back", command=self.backframe)
+        back = tkinter.Button(fr, text="back", command=self.backframe)
         back.grid(row=0, column=0, sticky="w", padx=4, pady=4)
 
-        ilabel = Label(fr, text="image number:")
+        ilabel = tkinter.Label(fr, text="image number:")
         ilabel.grid(row=0, column=1, sticky="e", pady=4)
 
-        self.evar = IntVar()
+        self.evar = tkinter.IntVar()
         self.evar.set(1)
-        entry = Entry(fr, textvariable=self.evar, width=6)
+        entry = tkinter.Entry(fr, textvariable=self.evar, width=6)
         entry.grid(row=0, column=2, sticky="w", pady=4)
         entry.bind('<Return>', self.getimgnum)
         
-        next = Button(fr, text="next", command=self.nextframe)
+        next = tkinter.Button(fr, text="next", command=self.nextframe)
         next.grid(row=0, column=3, sticky="e", padx=4, pady=4)
 
         # Bind arrows from previous and next
@@ -112,6 +112,7 @@ if __name__ == "__main__":
         sys.exit()
     filename = sys.argv[1]
 
-    root = Tk()
+    root = tkinter.Tk()
+    root.title("ViewStack")
     app = Viewer(root, filename)
     root.mainloop()

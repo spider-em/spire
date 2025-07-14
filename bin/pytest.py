@@ -25,17 +25,17 @@ print(' ')
 print("pytest.py           import numpy")               
 import numpy                                          
 
-print("pytest.py,          import SpiderImageSeries") 
+print("pytest.py           import SpiderImageSeries")
 from   Spider               import SpiderImageSeries  
 
 print("pytest.py           import SpiderImagePlugin") 
 # import SpiderImagePlugin  # 2018 al                             
 from   Spider               import SpiderImagePlugin # 2018 al                             
    
-print("pytest.py,          import Tkinter *")         
+print("pytest.py           import tkinter")
 from   tkinter import *
 
-print("pytest.py,          import ImageTk")           
+print("pytest.py           import ImageTk")
 from   PIL                  import ImageTk
 
 print("pytest.py           import Image")             

@@ -36,7 +36,7 @@ try:
     import PIL
 except ImportError as e:
     print(f"\nERROR!! {e}")
-    print(f  "  Please install 'pillow' using conda or pip")
+    print(   "  Please install 'pillow' using conda or pip")
     print(   "  Exiting...\n")
     exit()
 

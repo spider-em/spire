@@ -1,45 +1,49 @@
 #!/usr/bin/env python
 
+# PURPOSE:  Simple browser for SPIDER files,
+#           based on idlelib.TreeWidget
+
 import os
 import sys
 import time
-###import six
-import inspect
 import re
+import subprocess
 
-MODIFIED="Modified 2024 Mar 07"
+MODIFIED="Modified 2025 Jul 14"
 
-#def printvars(variables, quitTF=False, typeTF=False):
-  #"""Print the local variables in the caller's frame.
-  
-  #Adapted from https://stackoverflow.com/questions/6618795/get-locals-from-calling-namespace-in-python
-  #"""
-  
-  #if type(variables) is list:
-    ## Weird things happen if
-    #assert isinstance(variables[0], six.string_types), "UH OH!! Passed non-string %s instead of variable name" % variables[0]
-    
-    #variable_list= variables
-  #elif isinstance(variables, six.string_types):  # six works with both Pythons 2 & 3
-    #variable_list= [variables]
-  #else:
-    #print("ERROR!! Don't know how to deal with type %s" % type(variables) )
-    #exit()
-  
-  #frame= inspect.currentframe()
-  #dictionary= frame.f_back.f_locals
-  
-  #print("")
-  #for variable in variable_list :
-    #msg= "%s: '%s'" % (variable, dictionary[variable])
-    #if typeTF: msg+= " %s" % type(dictionary[variable])
-    #print(msg)
-      
-  #del frame
-  
-  #if quitTF:
-    #print('\nExiting printvars...')  # reminder in case I forget to take out the quit flag
-    #exit()
+def printvars(variables, quitTF=False, typeTF=False):
+  """Print the local variables in the caller's frame.
+
+  Adapted from https://stackoverflow.com/questions/6618795/get-locals-from-calling-namespace-in-python
+  """
+  import six
+  import inspect
+
+  if type(variables) is list:
+    # Weird things happen if
+    assert isinstance(variables[0], six.string_types), "UH OH!! Passed non-string %s instead of variable name" % variables[0]
+
+    variable_list= variables
+  elif isinstance(variables, six.string_types):  # six works with both Pythons 2 & 3
+    variable_list= [variables]
+  else:
+    print("ERROR!! Don't know how to deal with type %s" % type(variables) )
+    exit()
+
+  frame= inspect.currentframe()
+  dictionary= frame.f_back.f_locals
+
+  print("")
+  for variable in variable_list :
+    msg= "%s: '%s'" % (variable, dictionary[variable])
+    if typeTF: msg+= " %s" % type(dictionary[variable])
+    print(msg)
+
+  del frame
+
+  if quitTF:
+    print('\nExiting printvars...')  # reminder in case I forget to take out the quit flag
+    exit()
 
 def main():
   """
@@ -69,12 +73,12 @@ def main():
         first_char= curr_line.strip()[0]
         if line_idx==0 and first_char=="#":
           # Split with multiple possible delimiters (adapted from https://stackoverflow.com/a/23720594s)
-          headers= list( filter( None, re.split("[, \-!?:]+", curr_line.strip()[1:]) ) )
+          headers= list( filter( None, re.split(r"[, \-!?:]+", curr_line.strip()[1:]) ) )
           ###printvars("headers")
         else:
           key += 1
           ###split = curr_line.split()
-          split= list( filter( None, re.split("[, ]+", curr_line) ) )
+          split= list( filter( None, re.split( "[, ]+", curr_line.rstrip() ) ) )
           ###printvars('split', True, True)
           dictF[key] = split
       
@@ -123,15 +127,14 @@ def writeSpiderDocFile(filename, data, headers=None, append=0, mode='w'):
     isDictionary
     isListofLists
     fixHeaders
-    writeSpireoutFile
   """
   
   if append > 0: mode = 'a'
   
-  if mode == 'a':
-    _APPEND = 1
-  else: 
-    _APPEND = 0
+  #if mode == 'a':
+    #_APPEND = 1
+  #else:
+    #_APPEND = 0
   
   if not isDictionary(data):
     # if it's not a dictionary, see if it's a list of lists
@@ -157,9 +160,9 @@ def writeSpiderDocFile(filename, data, headers=None, append=0, mode='w'):
   keys = list( data.keys() )
   
   ###printvars(['data', 'keys'], True, True)
-  #print(f"157 data ({len(data)}) {type(data)}, keys ({len(keys)}) {type(keys)}")
-  #print(f"158 data[0] ({len(data[keys[0]])}) {data[keys[0]]}")
-  #exit()
+  #print(f"163 data ({len(data)}) {type(data)}, keys ({len(keys)}) {type(keys)}")
+  #print(f"164 data[0] ({len(data[keys[0]])}) {data[keys[0]]}")
+  ##exit()
   
   keys.sort()
   if len(keys) > 0:
@@ -178,7 +181,12 @@ def writeSpiderDocFile(filename, data, headers=None, append=0, mode='w'):
       n = len(values)
       h = "%5d %2d " % (int(key),int(n))
       for value in values:
-        h += " %11g " % (float(value))
+        try:
+          h += " %11g " % (float(value))
+        except ValueError as ve:
+          import inspect ; print(f"{os.path.splitext( os.path.basename(__file__) )[0]}:187:{inspect.stack()[0][3]}\tdata[key]= '{data[key]}'")
+          print(f"\nValueError: {ve}")
+          printvars("value", True, True)
       fp.write(h+"\n")
   else:
     # it's supposed to be a list! But if it's not..
@@ -195,9 +203,6 @@ def writeSpiderDocFile(filename, data, headers=None, append=0, mode='w'):
       
   fp.close()
   
-  #if not _APPEND: # i.e. it's a new doc file
-    #writeSpireoutFile(filename)
-  
   return 1
 
 def writedoc(filename, columns=None, lines=None, headers=None, keys=None, mode='w'):
@@ -208,7 +213,6 @@ def writedoc(filename, columns=None, lines=None, headers=None, keys=None, mode='
     writeSpiderDocFile
     makeDocfileHeader
     getLastDocfileKey
-    writeSpireoutFile
   """
   
   if not isListofLists(columns) and not isListofLists(lines):
@@ -227,12 +231,12 @@ def writedoc(filename, columns=None, lines=None, headers=None, keys=None, mode='
 
   # write Spider doc file header
   lastkey = None
-  _APPEND = 0
+  ###_APPEND = 0
   if mode == 'w':
     hdr = makeDocfileHeader(os.path.basename(filename))
     fp.write(hdr)
   elif mode == 'a':
-    _APPEND = 1
+    ###_APPEND = 1
     try:
       lastkey = getLastDocfileKey(filename)
     except:
@@ -279,9 +283,6 @@ def writedoc(filename, columns=None, lines=None, headers=None, keys=None, mode='
 
   fp.writelines(datalines)
   fp.close()
-
-  #if not _APPEND: # i.e. it's a new doc file
-      #writeSpireoutFile(filename)
 
 def makeDocfileHeader(filename, batext=None):
   """
@@ -342,7 +343,7 @@ def getLastDocfileKey(docfile):
   if not os.path.exists(docfile):
     return None
   cmd = 'tail %s' % docfile
-  res = getoutput(cmd)
+  res = subprocess.getoutput(cmd)
   s = res.split("\n")
   s.reverse()
 
@@ -387,7 +388,7 @@ def isListorTuple(x):
   Returns 1 if input is a list or a tuple
   """
   
-  if isinstance(x, ListType) or isinstance(x, TupleType) : 
+  if isinstance(x, list) or isinstance(x, tuple) :
     return 1
   else: 
     return 0
@@ -408,22 +409,5 @@ def fixHeaders(headers):
   
   return docstr
   
-#def writeSpireoutFile(filename):
-  #"""
-  #This section added Aug 2006, for Spire compatibility
-  #"""
-  
-  #if WRITE_SPIREOUT in os.environ:
-    #spireout = os.environ[WRITE_SPIREOUT]
-    #if os.path.exists(spireout):
-      #fp = open(spireout, mode='a')
-    #else:
-      #fp = open(spireout, mode='w')
-    #date, time, id = nowisthetime()
-    #fn = os.path.basename(filename)
-    #s = "  %s AT %s    OPENED NEW DOC FILE: %s\n" % (date, time, fn)
-    #fp.write(s)
-    #fp.close()
-
 if __name__ == "__main__":
   main()
