@@ -8,10 +8,10 @@
 # Copyright (C) 2006-2018  Health Research Inc., Menands, NY
 # Email:  spider@health.ny.gov
 
-import os, string, sys
+import os, sys
 
 from Spider            import Spiderutils
-from Spider            import SpiderImagePlugin
+###from Spider            import SpiderImagePlugin
 
 def backup(filename):
     if os.path.exists(filename):
@@ -32,8 +32,8 @@ def backup(filename):
 if sys.argv[1:]:
     file = sys.argv[1]
     outputdoc = sys.argv[2]
-    #micrograph = Image.open(sys.argv[2])
-    #outputdoc = sys.argv[3]
+    ##micrograph = Image.open(sys.argv[2])
+    ##outputdoc = sys.argv[3]
 
     dictF = {}  # initialize dictionary
     key = 0  # initialize key
@@ -60,12 +60,10 @@ if sys.argv[1:]:
 
             xcenter = xcoord + xdim/2
             ycenter = ycoord + ydim/2
-#            ycenter = mic_y - (ycoord + ydim/2)
+###            ycenter = mic_y - (ycoord + ydim/2)
 
             dictF[key] = [key,xcenter,ycenter,xcenter,ycenter,dummy]
-#           print filenum
 
-#        headers = ['XCOORD','YCOORD','PARTICLE','PEAK_HT','XDIM','YDIM']
         headers = ['XCOORD','YCOORD','PARTICLE','PEAK_HT']
         backup(outputdoc)
         if Spiderutils.writeSpiderDocFile(outputdoc,dictF, headers=headers, append=0):
@@ -76,5 +74,4 @@ if sys.argv[1:]:
         print("Error!", "Unable to read %s" % file)
 else:
     print("syntax: emanrctcoords2spiderdoc.py input_eman_coords output_spider_doc")
-#    print "syntax: emancoords2spiderdoc.py input_eman_coords input_micrograph output_spider_doc"
-
+###    print "syntax: emancoords2spiderdoc.py input_eman_coords input_micrograph output_spider_doc"

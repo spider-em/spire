@@ -11,7 +11,7 @@ from shutil import copy
 apps = ['scatter.py', 'pyplot.py', 'ctfdemo.py', 'xplor.py', 'montagefromdoc.py',
         'ctfgroup.py', 'ctfcircle.py', 'ctfmatch.py', 'classavg.py', 'montage.py',
         'qview.py', 'verifybyview.py', 'backup.py', 'emancoords2spiderdoc.py', 'emanrctcoords2spiderdoc.py' ,
-        'mkfilenums.py', 'spiconvert.py', 'binarytree.py', 'viewstack.py', 'xmippsel2spiderdoc.py']
+        'mkfilenums.py', 'spiconvert.py', 'binarytree.py', 'viewstack.py', 'xmippsel2spiderdoc.py', 'circlestack.py']
 
 _TARGETDIR = 'scripts'
 

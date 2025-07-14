@@ -9,14 +9,13 @@
 # Email:  spider@health.ny.gov
 
 import sys
-
-from   tkinter       import *
+import tkinter  #### from   tkinter       import *
 from   PIL           import Image, ImageTk, ImageDraw
-from   Spider        import SpiderImagePlugin  # 2018 al
+###from   Spider        import SpiderImagePlugin  # 2018 al
 
-class UI(Frame):
+class UI(tkinter.Frame):
     def __init__(self, master, im, value = 128):
-        Frame.__init__(self, master)
+        tkinter.Frame.__init__(self, master)
 
         self.image = im
         self.value = value
@@ -25,12 +24,12 @@ class UI(Frame):
         self.cy    = im.size[1] / 2
         width      = im.size[0]
 
-        self.canvas   = Canvas(self, width=im.size[0], height=im.size[1])
+        self.canvas   = tkinter.Canvas(self, width=im.size[0], height=im.size[1])
         self.backdrop = ImageTk.PhotoImage(im, palette=256)
-        self.canvas.create_image(0, 0, image=self.backdrop, anchor=NW)
+        self.canvas.create_image(0, 0, image=self.backdrop, anchor=tkinter.NW)
         self.canvas.pack()
 
-        scale = Scale(self, orient=HORIZONTAL, from_=0, to=width,
+        scale = tkinter.Scale(self, orient=tkinter.HORIZONTAL, from_=0, to=width,
                       resolution=1, command=self.update, length=width+1)
         scale.set(value)
         scale.bind("<ButtonRelease-1>", self.redraw)
@@ -57,13 +56,13 @@ class UI(Frame):
 
         # update canvas
         self.canvas.delete("overlay")
-        self.canvas.create_image(0, 0, image=self.overlay, anchor=NW,
+        self.canvas.create_image(0, 0, image=self.overlay, anchor=tkinter.NW,
                 tags="overlay")
 
 # --------------------------------------------------------------------
 # main
 # 2018 al FAILED Image.register_open("SPIDER", SpiderImageFile)
-root = Tk()
+root = tkinter.Tk()
 
 im   = Image.open(sys.argv[1])
 
