@@ -8,9 +8,13 @@
 # Copyright (C) 2006-2018  Health Research Inc., Menands, NY
 # Email:    spider@health.ny.gov
 
-import tkinter  #### from   tkinter import *
-import math  #### from   math    import *
+import tkinter
+from   tkinter import font
+import math, os  #### from   math    import *
 import Pmw
+from matplotlib import figure
+from matplotlib.backends import backend_tkagg
+from Spider import Spiderutils
 
 class CTFplot:
     " default values "
@@ -25,6 +29,8 @@ class CTFplot:
                  gep       = 2):     # Gaussian envelope parameter
         self.top = master
         self.top.title("ctfdemo")
+        self.top.bind('<Control-t>', self.test)
+
         self.cs      = tkinter.StringVar(); self.cs.set(cs)
         self.defocus = tkinter.StringVar(); self.defocus.set(defocus)
         self.kev     = tkinter.StringVar(); self.kev.set(kev)
@@ -36,12 +42,14 @@ class CTFplot:
 
         self.vardict = {}
 
+        self.gridShow = tkinter.IntVar()
+        self.gridShow.set(0)
         self.envelopeShow = tkinter.IntVar()
         self.envelopeShow.set(0)
         self.squared      = tkinter.IntVar()
         self.squared.set(0)
 
-        self.n             = 250
+        self.n             = 250  # number of samples
         self.max_spat_freq = 1.0 / (2.0 * float(self.pixsize.get()))
         self.X             = []
         self.Y             = []
@@ -88,48 +96,40 @@ class CTFplot:
         # ------- Widgets start here -------
         ff = tkinter.Frame(master)
         fg = tkinter.Frame(ff, relief='raised', borderwidth=2) # Upper left frame for plot
-        self.g = Pmw.Blt.Graph(fg) 
-        self.curveLine = 'model'
-        self.g.line_create(self.curveLine,
-                     xdata=tuple(self.X),
-                     ydata=tuple(self.Y),
-                     color = 'blue',
-                     symbol='')
 
-        self.envLine = 'envelope'
-        self.g.line_create(self.envLine,
-                     xdata=tuple(self.X),
-                     ydata=tuple(self.E),
-                     color = 'green',
-                     symbol='')
+        # Create a Matplotlib Figure
+        self.fig = figure.Figure(figsize=(5, 4), dpi=100)
+        self.fig.suptitle("Transfer function demo")
+        self.ax = self.fig.add_subplot(111)
+        if self.gridShow.get() : self.ax.grid(True)
+        #print("self.ax.xaxis._gridOnMajor", self.ax.xaxis._gridOnMajor)
+        #print("self.ax.yaxis._gridOnMajor", self.ax.yaxis._gridOnMajor)
+        self.ctf_model, = self.ax.plot(self.X, self.Y)  # model
 
-        self.g.configure(title='Transfer function demo')
-        self.g.legend_configure(hide=1)
-        # Fix the limits of the axes (o.w. axes move, not plot)
-        ymin,ymax = self.g.axis_limits("y")
-        self.g.axis_configure("y", min=ymin, max=ymax)
-        xmin,xmax = self.g.axis_limits("x")
-        #self.g.axis_configure("x", min=xmin, max=xmax, title="Spatial Frequency")
+        # Embed the Figure in the Tkinter Frame
+        canvas = backend_tkagg.FigureCanvasTkAgg(self.fig, master=fg)
+        canvas.draw()
+        canvas.get_tk_widget().pack(side=tkinter.TOP, fill=tkinter.BOTH, expand=1)
 
-        self.g_width = 446 #int(self.g.extents("plotwidth"))
+        self.envelope_line2d, = self.ax.plot(self.X, self.E)  # model
+        if not self.envelopeShow.get() : self.envelope_line2d._visible = False
+
         self.g_height = 150 #int(self.g.extents("plotheight"))
-        self.showEnvelope()
-        self.g.grid(row=0, column=0, sticky='nsew')
         fg.columnconfigure(0, weight=1) 
 
         fp = tkinter.Frame(ff, relief='raised', borderwidth=2)  #Upper right frame for pixsize
 
         plabel = tkinter.Label(fp,text="pixelsize")
         pslider = tkinter.Scale(fp, orient='vertical', from_=0, to=6,
-                       tickinterval = 1,
+                       tickinterval = 1.00,
                        resolution = 0.01, label ="",
                        variable = self.pixsize,
                        length =  self.g_height,
                        showvalue=0,
-                       command=self.xupdate)
+                       command=self.pxsz_update)
 
         pentry = tkinter.Entry(fp, textvariable=self.pixsize, width=10, background='white')
-        pentry.bind('<Return>', self.xupdate)
+        pentry.bind('<Return>', self.pxsz_update)
         plabel.grid(row=0, column=0)
         pentry.grid(row=1, column=0)
         pslider.grid(row=2, column=0)
@@ -143,9 +143,8 @@ class CTFplot:
         # ------ the set of sliders -------
 
         self.sf = Pmw.ScrolledFrame(master, horizflex='expand', vertflex='fixed',
-                                    vscrollmode='dynamic')
+                                    vscrollmode='dynamic', hull_height=760)
         f = self.sf.interior()
-        #f = tkinter.Frame(master, relief='raised', borderwidth=2)
         self.slider(f, start=0, end=50000, row=0,
                          label='defocus',
                          tickinterval=10000,
@@ -179,13 +178,12 @@ class CTFplot:
         f.columnconfigure(2, weight=1) # makes column expandable
         self.sf.pack(side='bottom', expand=1, fill='both')
 
-
     def slider(self, master, start=0, end=10, row=0, label="",
                tickinterval=1, resolution=None, digits=0,variable = None):
+        """
+        Build sliders for a given parameter
+        """
 
-        #variable.trace_variable("w", self.varchange)
-        #self.vardict[variable._name] = variable
-        
         lab = tkinter.Label(master, text=label)
         if resolution == None:
             resolution = float(tickinterval) / 50.0
@@ -196,9 +194,9 @@ class CTFplot:
                        showvalue=0,
                        #length = self.g_width,
                        digits = digits,
-                       command=self.update)
+                       command=self.update_plot)
         ent = tkinter.Entry(master, textvariable=variable, width=10, background='white')
-        ent.bind('<KeyPress>', self.update)
+        ent.bind('<KeyPress>', self.update_plot)
 
         lab.grid(row=row, column=0, sticky='ne', padx=5, pady=5)
         ent.grid(row=row, column=1, sticky='n', padx=5, pady=5)
@@ -206,6 +204,11 @@ class CTFplot:
         
 
     def compute(self):
+        """
+        Computes CTF as a function of spatial frequency
+        Does NOT re-draw plots
+        """
+
         cs    = 1e7 * float(self.cs.get())
         kv = float(self.kev.get())
         if kv != 0:
@@ -236,7 +239,6 @@ class CTFplot:
         kappa = ds1 * self.kappa
         dz1   = f1 * float(self.defocus.get())
 
-        ###envFlag = self.envelopeShow.get()
         acr = float(self.acr.get())
         squared = self.squared.get()
 
@@ -252,66 +254,95 @@ class CTFplot:
                 self.E[i] = (self.E[i])**2
                 self.Y[i] = (self.Y[i])**2
 
-    def update(self, scalevalue=None):
-        #if scalevalue != None:
-            #print scalevalue
+    def update_plot(self, scalevalue=None):
         self.compute()
-        self.g.element_configure(self.curveLine, ydata=tuple(self.Y))
-        self.g.element_configure(self.envLine, ydata=tuple(self.E))
-        self.top.update_idletasks()
+        self.ctf_model.set_ydata(self.Y)
+        self.envelope_line2d.set_ydata(self.E)
+        self.fig.canvas.draw_idle()
 
-    def xupdate(self, scalevalue=None):
+    def pxsz_update(self, scalevalue=None):
+        # Updates pixel size
+
+        ###Spiderutils.whocalledme(265)
         pixsize = float(self.pixsize.get())
+        ###Spiderutils.whocalledme(267, "pixsize", pixsize)
         if pixsize != 0:
             self.max_spat_freq = 1.0 / (2.0 * pixsize)
             for i in range(self.n):
                 self.X[i] = i* (self.max_spat_freq / float(self.n))
-            self.g.element_configure(self.curveLine, xdata=tuple(self.X))
-            self.g.element_configure(self.envLine, xdata=tuple(self.X))
-            self.g.axis_configure("x", max=self.max_spat_freq)
-            self.update()
+
+            # Pixel size is the only parameter that affects the x-axis, so we won't use update()
+            ###self.update_plot()
+            self.compute()
+            self.ctf_model.set_xdata(self.X)
+            self.ctf_model.set_ydata(self.Y)
+            self.envelope_line2d.set_xdata(self.X)
+            self.envelope_line2d.set_ydata(self.E)
+            self.resetYaxis()
+
+    def test(self, event=None):
+        print('winfo_geometry:', self.top.geometry() )
 
     def resetYaxis(self):
+        """
+        We assume we will have re-computed the range when we run this function.
+        """
+
         ymin = ymax = self.Y[0]
         for i in range(self.n):
             if ymin > self.Y[i]: ymin = self.Y[i]
             if ymax < self.Y[i]: ymax = self.Y[i]
-        self.g.axis_configure("y", min=ymin, max=ymax)
-       
+        ###Spiderutils.printvars(['ymin','ymax'])
+
+        # Redraw
+        self.ax.relim()
+        self.ax.autoscale_view()
+        self.fig.canvas.draw_idle()
 
     def openFile(self):
         return("filename")
     
     def showGrid(self):
-        self.g.grid_toggle()
+        ##print("self.ax.xaxis._major_tick_kw['gridOn']", self.ax.xaxis._major_tick_kw['gridOn'])
+        ##print("self.ax.yaxis._major_tick_kw['gridOn']", self.ax.yaxis._major_tick_kw['gridOn'])
+        do_show = not self.gridShow.get()
+        self.gridShow.set(do_show)
+        if do_show:
+            ###print("Turning on grid")
+            self.ax.grid(True)
+        else:
+            ###print("Turning off grid")
+            self.ax.grid(False)
+        ###is_toggled = self.gridShow.get() ; Spiderutils.printvars("is_toggled")
+
+        self.fig.canvas.draw_idle()
 
     def showEnvelope(self):
-        show = self.envelopeShow.get()
-        self.envelopeShow.set(not show)
-        if show:
-            self.g.element_show([self.curveLine, self.envLine])
+        do_show = self.envelopeShow.get()
+        self.envelopeShow.set(not do_show) #### = not self.envelopeShow  ####
+        ###do_show = self.envelopeShow.get()
+
+        if self.envelopeShow.get():
+            ##print("Drawing envelope")
+            self.envelope_line2d._visible = True
         else:
-            self.g.element_show([self.curveLine])
-        #self.update()
+            ##print("Not drawing envelope")
+            self.envelope_line2d._visible = False
+        self.fig.canvas.draw()
 
     def showSquared(self):
         self.squared.set(not self.squared.get())
         self.compute()
+        self.ctf_model.set_ydata(self.Y)
         self.resetYaxis()
-        self.update()
-
-    def varchange(self, varName, index, mode):
-        """ I think the only effect this has is to call update a 2nd time """
-
-        ###variable = self.vardict[varName]
-        self.update()
-
 
 # ------- end CTFplot class definition
 
 if __name__ == '__main__':
 
     master = tkinter.Tk()
-                 
+    master.option_add("*Font", "Helvetica 12 bold")
+
     c = CTFplot(master)
-    master.mainloop() 
+    master.geometry("574x819")
+    master.mainloop()

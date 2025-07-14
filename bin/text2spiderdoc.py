@@ -20,7 +20,6 @@ def printvars(variables, quitTF=False, typeTF=False):
   import inspect
 
   if type(variables) is list:
-    # Weird things happen if
     assert isinstance(variables[0], six.string_types), "UH OH!! Passed non-string %s instead of variable name" % variables[0]
 
     variable_list= variables
