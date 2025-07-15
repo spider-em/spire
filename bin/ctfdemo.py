@@ -101,6 +101,9 @@ class CTFplot:
         self.fig = figure.Figure(figsize=(5, 4), dpi=100)
         self.fig.suptitle("Transfer function demo")
         self.ax = self.fig.add_subplot(111)
+        self.ax.set_xlabel("Spatial frequency, 1/Å")
+        self.ax.set_ylabel("Contrast transfer")
+        self.fig.subplots_adjust(left=0.15, bottom=0.15)  # Manually pads the margins
         if self.gridShow.get() : self.ax.grid(True)
         #print("self.ax.xaxis._gridOnMajor", self.ax.xaxis._gridOnMajor)
         #print("self.ax.yaxis._gridOnMajor", self.ax.yaxis._gridOnMajor)
@@ -246,7 +249,7 @@ class CTFplot:
             ak = i * dk
             p  = ak**3 - dz1 * ak
             ch = math.exp(ak*4 * kappa)
-            self.E[i] = (math.exp(f*q1*p**2)*ch)*2*math.exp(-env1*ak**2)
+            self.E[i] = (math.exp(f*q1*p**2)*ch)*math.exp(-env1*ak**2)
             qqt = 2.0*math.pi*(0.25*ak**4 - 0.5*dz1*ak**2)
             qqt1 = (1.0-acr)*math.sin(qqt)-acr*math.cos(qqt)
             self.Y[i] = self.E[i] * qqt1
@@ -308,12 +311,9 @@ class CTFplot:
         do_show = not self.gridShow.get()
         self.gridShow.set(do_show)
         if do_show:
-            ###print("Turning on grid")
             self.ax.grid(True)
         else:
-            ###print("Turning off grid")
             self.ax.grid(False)
-        ###is_toggled = self.gridShow.get() ; Spiderutils.printvars("is_toggled")
 
         self.fig.canvas.draw_idle()
 
@@ -344,5 +344,5 @@ if __name__ == '__main__':
     master.option_add("*Font", "Helvetica 12 bold")
 
     c = CTFplot(master)
-    master.geometry("574x819")
+    master.geometry("688x819")
     master.mainloop()
