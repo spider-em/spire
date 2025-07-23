@@ -9,12 +9,14 @@
 # Email:    spider@health.ny.gov
 
 import tkinter  #### from   tkinter        import *
-from   tkinter import filedialog, messagebox
+from   tkinter import filedialog, messagebox, font
 import Pmw
 import string, sys
 import os
 import math  #### from   math           import *
 import subprocess
+from matplotlib import figure
+from matplotlib.backends import backend_tkagg
 
 from Spider    import Spiderutils
 
@@ -43,6 +45,7 @@ def integer(astring):
 def writedoc(filename, column1=1, column2=0):
     column1 = integer(column1)
     column2 = integer(column2)
+
     # If file already exists
     if os.path.exists(filename):
         # if it's a doc file, try to get the last key
@@ -66,6 +69,7 @@ def writedoc(filename, column1=1, column2=0):
         except:
             print("Unable to write to %s" % filename)
             return 0
+
     # if it's a new file
     else:
         try:
@@ -102,10 +106,15 @@ def readDefocus(filename):
     return M
             
     
-def readdoc(filename, factor=1.0, squared=1):
+def readCtfDoc(filename, factor=1.0, squared=1):
+    """
+    In previous versions, only 1-column ("roo") and 4-column (TF ED) CTF docs were recognized.
+    Now, there is CTF FIND format with three columns.
+    So we will consider each of these cases now based on the number of columns.
+    """
+
     F = Spiderutils.readdoc(filename, keys='all')
     if F == None: return []
-    roofile = 0
     A = []; B = []; C = []; D = []; E = []
     keys = list(F.keys())
     keys.sort()
@@ -114,18 +123,16 @@ def readdoc(filename, factor=1.0, squared=1):
     k = keys[0]
     vals = F[k]
     vlen = len(vals)
-    if vlen < 4:
-        roofile = 1
-    else:  #
-        if vals[2] == 1 and vals[3] == 1:
-            roofile = 1
             
     # get the data
     for key in keys:
-        if roofile:
+        # "roo" format
+        if vlen == 1:
             a = factor * F[key][0]
             D.append(a)
-        else:
+
+        # TF ED format
+        elif vlen== 4 or (vals[2] == 1 and vals[3] == 1):
             freq = F[key][0] 
             bgd  = factor * F[key][1]
             sub  = factor * F[key][2]
@@ -143,10 +150,24 @@ def readdoc(filename, factor=1.0, squared=1):
             D.append(env)
             E.append(roo)
 
-    if roofile:
+        # CTF FIND format
+        elif vlen== 3:
+            roo= factor * F[key][1]
+            freq = F[key][0]
+            # TODO: Sanity check that maximum spatial frequency in doc file corresponds matches
+
+            A.append(freq)
+            E.append(roo)
+
+        else:
+            return []  # openCtfFile() will print an error
+
+    if vlen == 1:  #### if roofile:
         return [D]
-    else:
+    elif vlen== 4 or (vals[2] == 1 and vals[3] == 1):
         return [A,B,C,D,E]
+    elif vlen== 3:
+        return [A,E]
 
 def getFiles(filetypes=None):
     ft = []
@@ -219,7 +240,7 @@ class CTFplot:
         self.max_spat_freq = 1.0 / (2.0 * float(self.pixsize.get()))
         self.kappa = -math.pi**2 / (16.0 * math.log(2.0))
         self.infinity = 1e50
-        self.ymax = tkinter.StringVar()
+        self.ymax = tkinter.DoubleVar()  #### StringVar()
         self.xmin = tkinter.StringVar() ; self.xmin.set(0)
         self.modymax = tkinter.StringVar()
         self.n = 250
@@ -234,9 +255,11 @@ class CTFplot:
         self.showSub = tkinter.IntVar() ; self.showSub.set(1)
         self.showEnv = tkinter.IntVar() ; self.showEnv.set(1)
         self.showMod = tkinter.IntVar() ; self.showMod.set(1)
+        self.gridShow= tkinter.IntVar() ; self.gridShow.set(0)
         self.colors = {'bgd':'#00cc00', 'sub':'red', 'env':'#9999ff',
                        'roo':'#ff9900',  'model':'white'}
-        # by default, data is squared as it is read in 
+
+        # by default, data are squared
         self.squared = tkinter.IntVar() ; self.squared.set(1)
 
         # whether to use the empirical envelope
@@ -253,7 +276,7 @@ class CTFplot:
         self.E = []
 
         if filename != None:
-            if not self.openFile(filename):
+            if not self.openCtfFile(filename):
                 filename = None
 
         if len(self.arr['frq']) > 0:
@@ -268,9 +291,9 @@ class CTFplot:
         if filename != None:
             self.newymax()
         else:
-            self.ymax.set('1.0')
+            self.ymax.set(1.)  #### ('1.0')
         self.modymax.set(1.0)
-        self.compute() # generate the model
+        self.computeModelCtf() # generate the model
 
         # ------- create the menu bar -------
         self.mBar = tkinter.Frame(master, relief='raised', borderwidth=1)
@@ -282,13 +305,13 @@ class CTFplot:
                                  relief='flat')
         Filebtn.pack(side=tkinter.LEFT, padx=5, pady=5)
         Filebtn.menu = tkinter.Menu(Filebtn, tearoff=0)
-        Filebtn.menu.add_command(label='Open TF ED file',
-                                 command=self.callOpenFile)
-        Filebtn.menu.add_command(label='Open File series',
-                                 command=self.fileSeries)
-        Filebtn.menu.add_command(label='Open Defocus file',
+        Filebtn.menu.add_command(label='Open simple defocus file',
                                  command=self.openDefocus)
-        Filebtn.menu.add_command(label='Save Defocus as...',
+        Filebtn.menu.add_command(label='Open TF ED file',
+                                 command=self.callOpenTfed)
+        Filebtn.menu.add_command(label='Open 1D file series',
+                                 command=self.fileSeries)
+        Filebtn.menu.add_command(label='Save defocus as...',
                                  command=self.saveDefocusAs)
         Filebtn.menu.add_separator()
         Filebtn.menu.add_command(label='Quit', underline=0,
@@ -307,6 +330,7 @@ class CTFplot:
                                     variable=self.squared,
                                     command=self.showSquared)
         Optbtn.menu.add_checkbutton(label='Grid', underline=0,
+                                    variable=self.gridShow,
                                     command=self.showGrid)
         Optbtn.menu.add_checkbutton(label='Use empirical envelope',
                                     variable=self.envelope,
@@ -330,21 +354,21 @@ class CTFplot:
                                     activeforeground = self.colors['roo'],
                                     variable = self.showRoo,
                                     command=self.replot)
-        Showbtn.menu.add_checkbutton(label='Background', 
+        Showbtn.menu.add_checkbutton(label='Background',
                                     background = 'black',
                                     foreground = self.colors['bgd'],
                                     selectcolor='red',
                                     activeforeground = self.colors['bgd'],
                                     variable = self.showBgd,
                                     command=self.replot)
-        Showbtn.menu.add_checkbutton(label='Subtracted data', 
+        Showbtn.menu.add_checkbutton(label='Subtracted data',
                                     background = 'black',
                                     foreground = self.colors['sub'],
                                     selectcolor='red',
                                     activeforeground = self.colors['sub'],
                                     variable = self.showSub,
                                     command=self.replot)
-        Showbtn.menu.add_checkbutton(label='Envelope', 
+        Showbtn.menu.add_checkbutton(label='Envelope',
                                     background = 'black',
                                     foreground = self.colors['env'],
                                     selectcolor='red',
@@ -379,7 +403,7 @@ class CTFplot:
         " yscale slider "
         fy = tkinter.Frame(ff, relief='raised', borderwidth=2)
         ylabel = tkinter.Label(fy,text="y max")
-        ymax = string.atof(self.ymax.get())
+        ymax = self.ymax.get()  #### float(self.ymax.get())
 
         self.yslider = tkinter.Scale(fy, orient='vertical', from_= ymax, to=0.0,
                        tickinterval = ymax/6.0,
@@ -392,6 +416,7 @@ class CTFplot:
 
         " model height scale "
         mlabel = tkinter.Label(fy,text="model\nheight")
+        ###print("mlabel.cget('text')", mlabel.cget('text'))
         mmax = 1.0   #string.atof(self.modymax.get())
 
         self.mslider = tkinter.Scale(fy, orient='vertical', from_= mmax, to=0.0,
@@ -401,7 +426,7 @@ class CTFplot:
                        variable = self.modymax,
                        length =  self.g_height,
                        showvalue=0,
-                       command=self.update)
+                       command=lambda v: self.update("model height", v) )
         
         ylabel.pack(side='top')
         self.yslider.pack(side='top', padx=5, pady=5)
@@ -409,37 +434,58 @@ class CTFplot:
         mlabel.pack(side='bottom')
 
 
+        self.curves = ['bgd','sub','env', 'roo']
+
         " the main plot "
         fg = tkinter.Frame(ff, relief='raised', borderwidth=2)
-        self.g = Pmw.Blt.Graph(fg, plotbackground="black" ) 
-        self.curves = ['bgd','sub','env', 'roo']
-        i = 0
-        for curve in self.curves:
-            self.g.line_create(curve,
-                         xdata=tuple(self.X),
-                         ydata=tuple(self.arr[curve]),
-                         color = self.colors[curve],
-                         symbol='')
-            i += 1
+        self.fig = figure.Figure(figsize=(6.5, 5), dpi=100)
+        ###self.fig.suptitle("Transfer function demo")
+        self.ax = self.fig.add_subplot(111)
+        self.ax.ticklabel_format( axis='y', style='sci', scilimits=(0,0) )  # can't get exponential notation to work
+        ###self.ax.yaxis.set_major_formatter(ticker.ScalarFormatter(useMathText=True))
+
+        #self.g = Pmw.Blt.Graph(fg, plotbackground="black" )
+        self.ax.set_facecolor("black")
+        self.ax.set_xlabel("Spatial frequency, 1/Å")
+        self.ax.set_ylabel("Contrast transfer")
+        self.fig.subplots_adjust(left=0.125, bottom=0.125, top=0.95, right=0.95)  # manually pads the margins
+        self.ax.yaxis.major.formatter._useMathText = True
 
         # the model curve
-        self.g.line_create('model',
-                     xdata=tuple(self.X),
-                     ydata=tuple(self.Y),
-                     color = self.colors['model'],
-                     symbol='')
-        self.g.legend_configure(hide=1)
-        # fix the limits of the axes (o.w. axes move, not plot)
-        ymin,ymax = self.g.axis_limits("y")
-        self.g.axis_configure("y", min=ymin, max=ymax)
-        xmin,xmax = self.g.axis_limits("x")
-        self.g.axis_configure("x", min=xmin, max=xmax, title="Spatial Frequency")
-        self.xmin.set(xmin)
+        self.plotdict = {}
+        self.plotdict['model'], = self.ax.plot(self.X, self.Y, color = self.colors['model'])
+        #self.g.line_create('model',
+                     #xdata=tuple(self.X),
+                     #ydata=tuple(self.Y),
+                     #color = self.colors['model'],
+                     #symbol='')
+        #self.g.legend_configure(hide=1)
+
+        #for curve in self.curves:
+            ##self.g.line_create(curve,
+                         ##xdata=tuple(self.X),
+                         ##ydata=tuple(self.arr[curve]),
+                         ##color = self.colors[curve],
+                         ##symbol='')
+            #self.plotdict[curve], = self.ax.plot(self.X, self.arr[curve], color = self.colors[curve])
+
+        # Embed the Figure in the Tkinter Frame
+        self.canvas = backend_tkagg.FigureCanvasTkAgg(self.fig, master=fg)
+        self.canvas.draw()
+        self.canvas.get_tk_widget().pack(side=tkinter.TOP, fill=tkinter.BOTH, expand=1)
+
+        ## fix the limits of the axes (o.w. axes move, not plot)
+        #ymin,ymax = self.g.axis_limits("y")
+        #xmin,xmax = self.g.axis_limits("x")
+        #self.g.axis_configure("y", min=ymin, max=ymax)
+        #self.g.axis_configure("x", min=xmin, max=xmax, title="Spatial Frequency")
+        self.xmin.set(0)
         xmax = self.max_spat_freq
+        xmin=float( self.xmin.get() )
 
         xslider = tkinter.Scale(fg, orient='horizontal', from_= xmin, to=xmax,
                        tickinterval = xmax/4.0,
-                       resolution = 0.001,   #xmax/40.0,
+                       resolution = 0.001,
                        label ="x min",
                        variable = self.xmin,
                        length =  int(self.g_width) / 2,
@@ -459,16 +505,12 @@ class CTFplot:
         self.defocuslabel.pack(side='top', padx=10, pady=5)
         self.savelabel.pack(side='top', padx=10, pady=5)
 
-        self.g.pack(side='top', fill='both', expand=1)
+        ###self.g.pack(side='top', fill='both', expand=1)
         xslider.pack(side='left', padx=5, pady=5)
         xbutton.pack(side='left', padx=5, pady=5)
         fl.pack(side='right', padx=10, pady=10)
         saveBut.pack(side='right', padx=10, pady=10)
         
-        #fy.pack(side='left', expand=1, fill='y')
-        #fg.pack(side='right', expand=1, fill='both')
-        #ff.pack(side='top', expand=1, fill='both')
-
         # ------ the set of sliders -------
 
         f = tkinter.Frame(ff, relief='raised', borderwidth=2)
@@ -517,6 +559,7 @@ class CTFplot:
     def callSetParms(self):
         w = tkinter.Toplevel(self.top)
         self.ParmWindow = w
+        self.ParmWindow.geometry('300x140')
         self.setParms(w)
         self.top.wait_window(w) # wait for window to be destroyed
         self.xupdate()
@@ -541,12 +584,20 @@ class CTFplot:
         entkv.grid(row=1, column=1)
         entcs.grid(row=2, column=1)
         entac.grid(row=3, column=1)
+        win.bind( '<Return>', lambda e, w=win: self.parmQuit(w) )
+        win.bind( '<Control-g>', lambda e, w=win: self.getSize(w) )
         f.pack(side='top')
         fb = tkinter.Frame(win)
         b = tkinter.Button(fb, text='ok', command=win.destroy)
         b.pack(padx=5, pady=5)
         fb.pack()
         self.askParms = 0
+
+    def parmQuit(self, win):
+        win.destroy()
+
+    def getSize(self, win):
+        print('geometry:', win.geometry() )
 
     def slider(self, master, start=0, end=10, row=0, label="",
                tickinterval=1, resolution=None, digits=0,variable = None):
@@ -559,18 +610,21 @@ class CTFplot:
                        resolution = resolution, label ="",
                        variable = variable,
                        showvalue=0,
-                       #length = self.g_width,
                        digits = digits,
-                       command=self.update)
+                       command=lambda v: self.update(label, v) )
         self.sliderlist.append(slider)
         ent = tkinter.Entry(master, textvariable=variable, width=10, background='white')
-        ent.bind('<KeyPress>', self.update)
+        ent.bind('<KeyPress>', lambda v: self.update(label, v) )
 
         lab.grid(row=row, column=0, sticky='w', padx=5, pady=5)
         ent.grid(row=row, column=1, sticky='w', padx=5, pady=5)
         slider.grid(row=row, column=2, sticky='ew', padx=5, pady=5)
 
-    def compute(self):
+    def computeModelCtf(self):
+        """
+        Computes model CTF
+        """
+
         cs    = 1e7 * float(self.cs.get())
         kv = float(self.kev.get())
         if kv != 0:
@@ -633,20 +687,25 @@ class CTFplot:
                     self.Y[i] = (self.Y[i] * env[i]) / ymax
         else:
             if ymax != 0:
-                f = float(self.modymax.get()) * float(self.ymax.get())
+                f = float(self.modymax.get()) * self.ymax.get()  #### float(self.ymax.get())
                 self.factor = f / ymax
             for i in range(self.n):
                 self.Y[i] = self.Y[i] * self.factor
 
-        if hasattr(self,'g'):
-            self.g.element_configure('model', ydata=tuple(self.Y))
+        ##if hasattr(self,'g'):
+            ##self.g.element_configure('model', ydata=tuple(self.Y))
+        if hasattr(self,'plotdict'):
+            self.plotdict['model'].set_ydata(self.Y)
 
-    def update(self, scalevalue=None):
-        self.compute()
-        #for curve in self.curves:
-            #self.g.element_configure(curve, ydata=tuple(self.arr[curve]))
-        #self.g.element_configure('model', ydata=tuple(self.Y))
-        self.top.update_idletasks()
+    def update(self, slider_name, value):
+        slider_nocr=slider_name.replace('\n',' ')
+
+        if slider_nocr == "model height" and self.envelope.get():
+            messagebox.showerror('ERROR!!', 'Model height cannot be adjusted when using empircal envelope')
+            return
+        self.computeModelCtf()
+        ###self.top.update_idletasks()
+        self.fig.canvas.draw_idle()
 
     def replot(self):
         " replots data based on which curves are in display list "
@@ -656,39 +715,56 @@ class CTFplot:
         self.showlist['env'] = self.showEnv.get()
         self.showlist['model'] = self.showMod.get()
         self.newymax()
-        self.compute()
+        ###Spiderutils.whocalledme(718, "self.ymax", self.ymax.get())
+        self.computeModelCtf()
         self.showCurves()
+        ##Spiderutils.whocalledme(752, "get_ylim", self.ax.get_ylim() )
+        ##print()
 
     def showCurves(self):
-        curves = list(self.showlist.keys())
-        show = []
-        for curve in curves:
-            if self.showlist[curve]:
-                show.append(curve)
-        self.g.element_show(show)
-        self.top.update_idletasks()
+        # In case model is invisible...
+        if self.showlist['model']:
+            for curve in self.curves:
+                if curve in self.plotdict: self.plotdict[curve].set_visible(False)
+
+        # Axis limits are weird unless I hide all but the model
+        self.ax.relim(visible_only=True)
+        self.ax.autoscale_view()
+
+        # Restore visibility
+        for curve in self.curves:
+            if curve in self.plotdict and self.showlist[curve]:
+                self.plotdict[curve].set_visible(True)
+
+        self.fig.canvas.draw_idle()
 
     def newymax(self):
         " compute ymax over all curves except model "
         # get xmin and index into self.X
+        ##Spiderutils.whocalledme(769)
+        ##Spiderutils.whocalledme(770, "self.tfedfile", self.tfedfile)
         xmin = float(self.xmin.get())
         for i in range(self.n):
             if self.X[i] > xmin:
                 break
+
         # i is index
         M = []
-        keys = list(self.showlist.keys())
-        for list in keys:
-            if list != 'frq' and list != 'model':
-                if self.showlist[list] and len(self.arr[list]) > i:
-                    newlist = self.arr[list][i:]
+        ymax = 0
+        showmax = ''
+
+        for curr_key in self.showlist.keys():
+            if curr_key != 'frq' and curr_key != 'model':
+                if self.showlist[curr_key] and len(self.arr[curr_key]) > i:
+                    newlist = self.arr[curr_key][i:]
                     M.append(max(newlist))
-                    #print "%d %s %f" % (i,list,max(self.arr[list]))
+                    if max(newlist) > ymax:
+                        ymax = max(newlist)
+                        showmax= curr_key
 
         if len(M) == 0: return
         ymax =  max(M)
         if ymax == 0: ymax = 1.0
-        #print "ymax %f" % ymax
         self.ymax.set(ymax)
 
         if hasattr(self,'yslider'):       
@@ -696,12 +772,14 @@ class CTFplot:
                                    tickinterval = ymax/5.0,
                                    resolution = ymax/50.0)
             self.yslider.set(ymax)
-            self.g.axis_configure("y", max=ymax, min=0.0)
+            ###self.g.axis_configure("y", max=ymax, min=0.0)
 
     def resetYmax(self):
         self.newymax()
-        self.compute()
-        self.showCurves()
+        ymin= self.ax.get_ylim()[0]
+        ymax= self.ymax.get()*1.05
+        self.ax.set_ylim(ymin, ymax)
+        self.fig.canvas.draw_idle()
 
     def xupdate(self, scalevalue=None):
         pixsize = float(self.pixsize.get())
@@ -710,64 +788,101 @@ class CTFplot:
         self.max_spat_freq = 1.0 / (2.0 * pixsize)
         for i in range(self.n):
             self.X[i] = i* (self.max_spat_freq / float(self.n))
+
+        # Before the first file is selected, self.arr will have zero length
         for curve in self.curves:
-            self.g.element_configure(curve, xdata=tuple(self.X))
-        self.g.element_configure('model', xdata=tuple(self.X))
-        self.g.axis_configure("x", max=self.max_spat_freq)
+            # If dictionary entry not yet present, then create new plot, else replace x_data
+            if curve not in self.plotdict:
+                #self.g.element_configure(curve, xdata=tuple(self.X))
+                if len(self.arr[curve]) == len(self.X):
+                    self.plotdict[curve], = self.ax.plot(self.X, self.arr[curve], color = self.colors[curve])
+                elif len(self.arr[curve]) != 0 :
+                    print(f"WARNING! Unknown state: Number of sampling points ({len(self.X)}), is neither number of entries in the file ({len(self.arr[curve])}) nor zero")
+                    return
+            else:
+                self.plotdict[curve].set_xdata(self.X)
+
+        #self.g.element_configure('model', xdata=tuple(self.X))
+        #self.g.axis_configure("x", max=self.max_spat_freq)
 
     def xminupdate(self, scalevalue=None):
         xmin = float(self.xmin.get())
         if xmin < self.max_spat_freq:
-            self.g.axis_configure("x", min=xmin)
+            ###self.g.axis_configure("x", min=xmin)
+            ##Spiderutils.printvars("xmin", typeTF=True)
+            self.ax.set_xlim(xmin)
+            self.fig.canvas.draw_idle()
         
     def yupdate(self, scalevalue=None):
-        ymax = float(self.ymax.get())
-        if ymax > 0:
-            self.g.axis_configure("y", max=ymax)
+        ymax = self.ymax.get()  #### float(self.ymax.get())
+        ##if ymax > 0:
+            ##self.g.axis_configure("y", max=ymax)
+        self.ax.set_ylim(self.ax.get_ylim()[0], ymax)
+        self.fig.canvas.draw_idle()
             
-    #def resetYaxis(self):
-        #ymin = ymax = self.Y[0]
-        #for i in range(self.n):
-         #  if ymin > self.Y[i]: ymin = self.Y[i]
-         #   if ymax < self.Y[i]: ymax = self.Y[i]
-       #self.g.axis_configure("y", min=ymin, max=ymax)
-
     def setFileLabels(self):
         if type(self.savefile) == type(""):
             self.savelabel.configure(text=os.path.basename(self.savefile))
         if type(self.tfedfile) == type(""):
             self.tfedlabel.configure(text=os.path.basename(self.tfedfile))
     
-    def callOpenFile(self, filename=None):
-        if not self.openFile(filename=filename):
+    def callOpenTfed(self, filename=None):
+        if not self.openCtfFile(filename=filename):
             return
         self.xupdate()
+        ###self.replot()
+
+        # Replace y values
+        for curve in self.curves:
+            self.plotdict[curve].set_ydata(self.arr[curve])
+            #if len(self.arr[curve]) > 0:
+                #self.g.element_configure(curve,
+                                         #ydata=tuple(self.arr[curve]))
         self.replot()
-        for curve in ['bgd', 'sub', 'env', 'roo']:
-            if len(self.arr[curve]) > 0:
-                self.g.element_configure(curve,
-                                         ydata=tuple(self.arr[curve]))
+        self.resetYmax()  # I don't know why I need this
         self.setFileLabels()
 
-    def openFile(self, filename=None):
+    def openCtfFile(self, filename=None):
         if filename == None or filename == "":
             filename = filedialog.askopenfilename()
             if filename == None or filename == "":
                 return 0
-        A = readdoc(filename, self.multfactor, self.squared.get())
+        A = readCtfDoc(filename, self.multfactor, self.squared.get())
+
         if len(A) == 0:
-            print("openFile: error - fileread returned empty list")
+            print("openCtfFile: error - readCtfDoc failed")
             return 0
+
+        # single-column CTF doc file
         elif len(A) == 1:  # roofile
+            A0 = A[0]
             self.arr['roo'] = A[0] ; self.showRoo.set(1)
             self.roofile = filename
+
+        # TF ED file
         elif len(A) == 5:
             self.arr['frq'] = A[0] ; self.X = self.arr['frq']
-            self.arr['bgd'] = A[1] #; self.showBgd.set(1)
-            self.arr['sub'] = A[2] #; self.showSub.set(1)
-            self.arr['env'] = A[3] #; self.showEnv.set(1)
-            self.arr['roo'] = A[4] #; self.showRoo.set(1)
+            self.arr['bgd'] = A[1]
+            self.arr['sub'] = A[2]
+            self.arr['env'] = A[3]
+            self.arr['roo'] = A[4]
             self.tfedfile = filename
+
+        # CTF FIND file
+        elif len(A) == 4:
+            self.arr['frq'] = A[0] ; self.X = self.arr['frq']
+            self.arr['roo'] = A[1]
+
+            # Update these if&when we calculate them
+            self.showBgd.set(0) #;self.arr['bgd'] = A[1] #; self.showBgd.set(1)
+            self.showSub.set(0) #;self.arr['sub'] = A[2] #; self.showSub.set(1)
+            self.showEnv.set(0) #;self.arr['env'] = A[3] #; self.showEnv.set(1)
+            self.tfedfile = filename
+
+        else:
+            print(f"Don't recognize {filename} with {len(A)} columns")
+            return 0
+
         self.n = len(A[0])
 
         self.E = []
@@ -779,7 +894,7 @@ class CTFplot:
 
     def filenumber(self, filename):
         " returns an integer "
-        i = string.rfind(filename,'.')
+        i = filename.rfind('.')
         if i < 0: return -1
 
         x = i  
@@ -860,6 +975,9 @@ class CTFplot:
             self.makedisplaylist()
         else:
             self.boxwin = tkinter.Toplevel(self.top)
+            self.boxwin.title("File series")
+            self.boxwin.geometry('215x290')
+            self.boxwin.bind( '<Control-g>', lambda e, w=self.boxwin: self.getSize(w) )
             flabels = tkinter.Frame(self.boxwin)
             bf = tkinter.Button(flabels, text='Files',
                         command=lambda self=self,s='files':self.makedisplaylist(sort=s))
@@ -872,23 +990,19 @@ class CTFplot:
                                            items = self.displaylist,
                                            selectioncommand=self.select)
             self.box.pack(side='top', padx=5, pady=5, fill='both', expand=1)
-            #d = tkinter.Button(self.boxwin, text='Read Defocus', command=self.openDefocus)
-            #d.pack(side='left', padx=5, pady=5)
             b = tkinter.Button(self.boxwin, text='Done', command=self.boxwin.destroy)
             b.pack(side='bottom', padx=5, pady=5)
-            #self.box.focus_set()
-
 
     def select(self):
         sels = self.box.getcurselection()
         if len(sels) < 1: return
         
-        f = string.split(sels[0])
+        f = sels[0].split()
         fn = self.filenumber(f[0])  # get number from basename
         filename = self.fileDict[fn][1]  # full path
         if len(f) == 2: # "filename   defocus"
             self.defocus.set(f[1])
-        self.callOpenFile(filename=filename)
+        self.callOpenTfed(filename=filename)
 
     def defocusButtonfunc(self):
         " if defocus data loaded, sorts on that column; else loads data"
@@ -898,7 +1012,7 @@ class CTFplot:
             self.makedisplaylist(sort='defocus')
 
     def openDefocus(self, filename=None):
-        " expects 1st column=mic #, 2nd col=defocus "
+        " expects 1st column=mic#, 2nd col=defocus "
         if filename == None:
             filename = filedialog.askopenfilename(title="Open doc file with defocus values")
         if filename == "" or filename == None or len(filename) == 0:
@@ -923,10 +1037,11 @@ class CTFplot:
 
     def saveDefocusAs(self):
         filename = filedialog.asksaveasfilename()
-        try:
-            os.remove(filename)
-        except:
-            print("unable to write to %s" % filename)
+        if os.path.exists(filename):
+            try:
+                os.remove(filename)
+            except:
+                print("unable to write to %s" % filename)
         if filename != "":
             self.saveDefocus(filename=filename)
 
@@ -948,8 +1063,10 @@ class CTFplot:
         micnum = self.filenumber(os.path.basename(self.tfedfile))
         defocus = int(float(self.defocus.get()))
         outfile = self.savefile
-        headers = Spiderutils.getDocfileHeaders(outfile)
+
         if os.path.exists(outfile):
+            headers = Spiderutils.getDocfileHeaders(outfile)
+
             # try to replace the line
             d = Spiderutils.readdoc(outfile, keys='all')
             keys = list(d.keys())
@@ -965,18 +1082,23 @@ class CTFplot:
             else:
                 Spiderutils.writedoc(outfile,columns=[[micnum],[defocus]],mode='a')
         else:
+            headers = ['MICROGRAPH','DEFOCUS']
             Spiderutils.writedoc(outfile,columns=[[micnum],[defocus]],headers=headers)
-        #if writedoc(self.savefile, column1=micnum, column2=defocus):
         print("defocus %s saved to %s" % (defocus, outfile))
     
     def showGrid(self):
-        self.g.grid_toggle()
+        if self.gridShow.get():
+            self.ax.grid(True)
+        else:
+            self.ax.grid(False)
+
+        self.fig.canvas.draw_idle()
 
     def showSquared(self):
         " variable changed automatically in checkbutton "
         # self.squared.set(self.squared.get())
         if self.tfedfile != "":
-            self.callOpenFile(filename=self.tfedfile)
+            self.callOpenTfed(filename=self.tfedfile)
 
     def quit(self):
         if hasattr(self,'ParmWindow'):
@@ -1045,6 +1167,7 @@ if __name__ == '__main__':
  
     master = tkinter.Tk()
     master.title("CTF Match")
+    master.option_add("*Font", "Helvetica 12 bold")
                  
     if nargs == 0:
         c = CTFplot(master)

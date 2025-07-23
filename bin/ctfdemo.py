@@ -274,7 +274,7 @@ class CTFplot:
             for i in range(self.n):
                 self.X[i] = i* (self.max_spat_freq / float(self.n))
 
-            # Pixel size is the only parameter that affects the x-axis, so we won't use update()
+            # Pixel size is the only parameter that affects the x-axis, so we won't use update_plot()
             ###self.update_plot()
             self.compute()
             self.ctf_model.set_xdata(self.X)
