@@ -328,9 +328,9 @@ def fitSpline(sp_freq_list, exp_amp_list, window_size=11, poly_order=1, start_re
         xcoords.append(xvalue)
         ycoords.append(yvalue)
         if min_max == 'Maximum' and verbosity == 3:
-            print('  Maximum', key, xvalue, yvalue)
+            print('Maximum', key, xvalue, yvalue)
         if min_max == 'Minimum' and verbosity == 4:
-            print('  Minimum', key, xvalue, yvalue)
+            print('Minimum', key, xvalue, yvalue)
 
     # Search experimental and theoretical curves for extrema (skipping lowest-resolution values)
     for key in range(2, len(sp_freq_list) - 2):
@@ -344,18 +344,15 @@ def fitSpline(sp_freq_list, exp_amp_list, window_size=11, poly_order=1, start_re
 
                 add_point(exp_min_x, exp_min_y, key, sp_freq_list[key], exp_amp_list[key], verbosity, 'Minimum')
 
-        # Check if smoothened curve is at a maximum
         if (smooth_list[key] > smooth_list[key - 2] and smooth_list[key] > smooth_list[key + 2]):
             add_point(exp_max_x, exp_max_y, key, sp_freq_list[key], exp_amp_list[key], verbosity, 'Maximum')
             last_max_key = key
-
 
     # If there's a big gap, add a point halfway
     if last_max_key/len(sp_freq_list) < 0.5 :
         halfway = (len(sp_freq_list) - last_max_key)//2 + last_max_key
         average = (exp_max_y[-1] + exp_amp_list[-1])/2
-        ###Spiderutils.whocalledme(387, ['halfway', 'average'], [halfway, average])
-        add_point(exp_max_x, exp_max_y, key, sp_freq_list[halfway], average, verbosity, 'Maximum')
+        add_point(exp_max_x, exp_max_y, halfway, sp_freq_list[halfway], average, verbosity, 'Maximum')
     add_point(exp_max_x, exp_max_y, key, sp_freq_list[-1], exp_amp_list[-1], verbosity, 'Maximum')
     add_point(exp_min_x, exp_min_y, key, sp_freq_list[-1], exp_amp_list[-1], verbosity, 'Minimum')
 
@@ -885,10 +882,10 @@ class CTFplot:
         self.showlist['env'] = self.showEnv.get()
         self.showlist['model'] = self.showMod.get()
         self.newymax()
-        if self.verbose>=2 : print("replot: ymax", self.ymax.get())
+        if self.verbose==2 : print("replot: ymax", self.ymax.get())
         self.computeModelCtf()
         self.showCurves()
-        if self.verbose>=2 : print("replot: get_ylim", self.ax.get_ylim(), '\n' )
+        if self.verbose==2 : print("replot: get_ylim", self.ax.get_ylim(), '\n' )
 
     def showCurves(self):
         # In case model is invisible...
@@ -912,7 +909,7 @@ class CTFplot:
     def newymax(self):
         " compute ymax over all curves except model "
         # get xmin and index into self.X
-        if self.verbose>=2 : print("newymax: self.tfedfile", self.tfedfile)
+        if self.verbose==2 : print("newymax: self.tfedfile", self.tfedfile)
         xmin = float(self.xmin.get())
         for i in range(self.n):
             if self.X[i] > xmin:
@@ -974,7 +971,7 @@ class CTFplot:
     def xminupdate(self, scalevalue=None):
         xmin = float(self.xmin.get())
         if xmin < self.max_spat_freq:
-            if self.verbose>=2 : print("xminupdate: xmin", xmin)
+            if self.verbose==2 : print("xminupdate: xmin", xmin)
             self.ax.set_xlim(xmin)
             self.fig.canvas.draw_idle()
         
@@ -1287,6 +1284,19 @@ class CTFplot:
 if __name__ == '__main__':
 
     args, tfed = parse_command_line()
+
+    # Make sure TF ED files are actually files and not unrecognized arguments
+    nonfiles = []
+    for fn in tfed:
+        if not os.path.exists(fn) : nonfiles.append(fn)
+    if len(nonfiles) > 0:
+        print()
+        print( "ERROR!! The following are either unrecognized flags or non-existent files:")
+        print( " ", " ".join(nonfiles) )
+        print()
+        print( "  Exiting...\n")
+        exit()
+
     #print(args)
     #print('tfed',tfed)
     #exit()
