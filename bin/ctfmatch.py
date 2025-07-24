@@ -8,20 +8,191 @@
 # Copyright (C) 2006-2018  Health Research Inc., Menands, NY
 # Email:    spider@health.ny.gov
 
-import tkinter  #### from   tkinter        import *
-from   tkinter import filedialog, messagebox, font
+import tkinter
+from   tkinter import filedialog, messagebox
 import Pmw
-import string, sys
+import string
 import os
-import math  #### from   math           import *
+import math
 import subprocess
 from matplotlib import figure
 from matplotlib.backends import backend_tkagg
+import numpy as np
+from scipy import interpolate, signal
+import argparse
 
 from Spider    import Spiderutils
 
 import webbrowser
 webpage = "http://www.wadsworth.org/spider_doc/spider/spire/tools-docs/ctfmatch.html"
+
+# Constants & defaults
+MODIFIED="Modified 2025 Jul 24"
+MAX_VERBOSITY=2
+SPHERICAL_ABERRATION=2.0
+VOLTAGE=200
+PIXSIZE=2.82
+SOURCE_SIZE=0.0
+DEFOCUS_SPREAD=0.0
+GAUSSIAN_ENV=2.0
+AMP_CONTRAST=0.1
+
+# For spline-fitting
+WIN_SIZE=11    # Window size for filtering CTF profile using Savitzky-Golay filter
+POLY_ORDER=1   # Polynomial order for filtering CTF profile using Savitzky-Golay filter
+MIN_RES=30     # CTF minima will be ignored before this resolution (in A)
+SMOOTH_BKGD=1  # Smoothening factor for background during spline-fitting
+SMOOTH_ENV=1   # Smoothening factor for envelope during spline-fitting
+
+USAGE = """
+  %s <options> <optional_profile_docfiiles>
+
+Wild cards can be used for doc files, e.g.:
+  %s -defocus defocus.dat power/roo_doc_00*
+
+Providing both the pixel size and voltage will bypass the initial parameter window, e.g.:
+  %s  -pixsize 2.82 -kev 200
+
+
+""" % ( (os.path.basename(__file__),)*3 )
+
+def parse_command_line():
+    """
+    Parse the command line.  Adapted from sxmask.py
+
+    Arguments:
+        None
+
+    Returns:
+        Parsed arguments object
+    """
+
+    parser = argparse.ArgumentParser(
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
+        usage=USAGE,
+        epilog=MODIFIED
+    )
+
+    parser.add_argument(
+        "-defocus",
+        type=str,
+        default='',
+        help="SPIDER doc file with defocus values")
+
+    parser.add_argument(
+        "-verbose", "-v", "-verbosity",
+        type=int,
+        default=1,
+        help=f"Screen verbosity [0..{MAX_VERBOSITY}]")
+
+
+    parameters= parser.add_argument_group(
+        title="Optical parameters")
+
+    parameters.add_argument(
+        "-cs",
+        type=float,
+        default=SPHERICAL_ABERRATION,
+        help="Spherical aberration constant (mm)")
+
+    parameters.add_argument(
+        "-kev",
+        type=float,
+        default=argparse.SUPPRESS,
+        help=f"Electron energy (keV) (default: {VOLTAGE})")
+
+    parameters.add_argument(
+        "-pixsize",
+        type=float,
+        default=argparse.SUPPRESS,
+        help=f"Pixel size (A/pixel) (default: {PIXSIZE})")
+
+    parameters.add_argument(
+        "-src",
+        type=float,
+        default=SOURCE_SIZE,
+        help="Source size (1/A)")
+
+    parameters.add_argument(
+        "-spread",
+        type=float,
+        default=DEFOCUS_SPREAD,
+        help="Defocus spread (A)")
+
+    parameters.add_argument(
+        "-acr",
+        type=float,
+        default=AMP_CONTRAST,
+        help="Amplitude contrast ratio")
+
+    parameters.add_argument(
+        "-gep",
+        type=float,
+        default=GAUSSIAN_ENV,
+        help="Gaussian envelope parameter")
+
+
+    spliner= parser.add_argument_group(
+        title="Spline-fitting parameters for background subtraction of CTF FIND output")
+
+    spliner.add_argument(
+        "-winsize",
+        type=int,
+        default=WIN_SIZE,
+        help="Window size for filtering CTF profile using Savitzky-Golay filter")
+
+    spliner.add_argument(
+        "-poly",
+        type=int,
+        default=POLY_ORDER,
+        help="Polynomial order for filtering CTF profile using Savitzky-Golay filter")
+
+    spliner.add_argument(
+        "-minres",
+        type=float,
+        default=MIN_RES,
+        help="CTF minima will be ignored before this resolution (in A)")
+
+    spliner.add_argument(
+        "-smoothbkgd",
+        type=float,
+        default=SMOOTH_BKGD,
+        help="Smoothening factor for background during spline-fitting")
+
+    spliner.add_argument(
+        "-smoothenv",
+        type=float,
+        default=SMOOTH_ENV,
+        help="Smoothening factor for envelope during spline-fitting")
+
+    advanced= parser.add_argument_group(
+        title="Advanced settings")
+
+    advanced.add_argument(
+        "-maxdf",
+        type=float,
+        default=60000.,
+        help="Maximum defocus value for slide bar, Angstroms")
+
+    advanced.add_argument(
+        "-defaultdf",
+        type=float,
+        default=20000.,
+        help="Default starting defocus value, Angstroms")
+
+    advanced.add_argument(
+        "-nsam", "-n",
+        type=int,
+        default=250,
+        help="Number of sampling points in spatial frequency")
+
+    advanced.add_argument(
+        "-expmult",
+        type=float,
+        default=1.,
+        help="Multiplcation factor for experimental data")
+
+    return parser.parse_known_args()
 
 def ctfhelp():
     try:
@@ -35,61 +206,6 @@ def ctfabout():
         "from SPIDER's CTF FIND command."
     messagebox.showinfo("About CTFmatch 2.0", s)
 
-def integer(astring):
-    if type(astring) == type(""):
-        dot = string.find(astring,".")
-        if dot > 0:
-            astring = astring[:dot]
-    return int(astring)
-
-def writedoc(filename, column1=1, column2=0):
-    column1 = integer(column1)
-    column2 = integer(column2)
-
-    # If file already exists
-    if os.path.exists(filename):
-        # if it's a doc file, try to get the last key
-        if Spiderutils.isSpiderDocfile(filename):
-            lastline = subprocess.getoutput("tail -1 %s" % filename)
-            if len(lastline) > 0:
-                key = 1 + int(string.split(lastline)[0])
-            else:
-                key = 1
-        else:
-            # if it's not a doc file...
-            os.remove(filename)
-            key = 1
-            
-        data = "%5d 2 %11d% 11d\n" % (key, column1, column2)
-
-        try:
-            fp = open(filename, 'a')  # append
-            fp.write(data)
-            fp.close()
-        except:
-            print("Unable to write to %s" % filename)
-            return 0
-
-    # if it's a new file
-    else:
-        try:
-            fp    = open(filename, 'w')
-            fname = os.path.basename(filename)
-            ext   = os.path.splitext(filename)[1]
-            ext   = ext[1:] # remove dot
-            date,time,id = Spiderutils.nowisthetime()
-            h = " ;ctf/%s   %s AT %s   %s\n" % (ext,date,time,fname)
-            fp.write(h)
-            fp.write(" ; /     MICROGRAPH   DEFOCUS\n")
-            key  = 1
-            data = "%5d 2 %11d %11d\n" % (key, column1, column2)
-            fp.write(data)
-            fp.close()
-        except:
-           print("Unable to create %s" % filename)
-           return 0
-    return 1
-            
 def readDefocus(filename):
     " returns list of (mic#, defocus) pairs (mic=int defocus=string)"
 #    F = spiderutils.readSpiderDocFile(filename, col_list=(1,2))
@@ -152,15 +268,15 @@ def readCtfDoc(filename, factor=1.0, squared=1):
 
         # CTF FIND format
         elif vlen== 3:
-            roo= factor * F[key][1]
-            freq = F[key][0]
-            # TODO: Sanity check that maximum spatial frequency in doc file corresponds matches
+            # NOTE: CTF FIND shows spatial frequency in reciprocal pixels, not Angstroms
+            roo= factor * F[key][0]
+            freq = F[key][2]
 
             A.append(freq)
             E.append(roo)
 
         else:
-            return []  # openCtfFile() will print an error
+            return []  # openRooDoc() will print an error if there is one
 
     if vlen == 1:  #### if roofile:
         return [D]
@@ -181,6 +297,97 @@ def getFiles(filetypes=None):
     else:
         return f  # hopefully a tuple or a list
 
+def fitSpline(sp_freq_list, exp_amp_list, window_size=11, poly_order=1, start_res=30, backgd_smooth=1, envelope_smooth=1, verbosity=0):
+    """
+    Subtract background from experimental curve
+    and apply envelope to theoretical curve
+    by fitting relative extrema to a spline
+
+    Adapted from SPHIRE's sp_gui_cter.py
+
+    Input parameters:
+        sp_freq_list : spatial frequency
+        exp_amp_list : experimental profile
+        window_size : window size for Savitzky-Golay filter
+        poly_order : polynomial order for Savitzky-Golay filter
+        start_res : CTF minima will be ignored before this resolution (in Angstroms, not reciprocal Angstroms)
+        backgd_smooth : smoothening factor for background
+        envelope_smooth : smoothening factor for envelope
+    """
+
+    # Smoothen experimental curve (adapted from https://medium.com/pythoneers/introduction-to-the-savitzky-golay-filter-a-comprehensive-guide-using-python-b2dd07a8e2ce)
+    smooth_list = signal.savgol_filter(exp_amp_list, window_size, poly_order)
+
+    # initialize lists of extrema
+    exp_max_x = []
+    exp_max_y = []
+    exp_min_x = []
+    exp_min_y = []
+
+    def add_point(xcoords, ycoords, key, xvalue, yvalue, verbosity, min_max):
+        xcoords.append(xvalue)
+        ycoords.append(yvalue)
+        if min_max == 'Maximum' and verbosity == 3:
+            print('  Maximum', key, xvalue, yvalue)
+        if min_max == 'Minimum' and verbosity == 4:
+            print('  Minimum', key, xvalue, yvalue)
+
+    # Search experimental and theoretical curves for extrema (skipping lowest-resolution values)
+    for key in range(2, len(sp_freq_list) - 2):
+        # Check if smoothened curve is at a minimum (skipping low-resolution values)
+        if (smooth_list[key] < smooth_list[key - 2] and smooth_list[key] < smooth_list[key + 2]):
+            # Ignore low-resolution minima
+            if sp_freq_list[key] > 1/start_res :
+                # If first point, then prepend the same value at x=0
+                if len(exp_min_y) == 0:
+                    add_point(exp_min_x, exp_min_y, key, sp_freq_list[0], exp_amp_list[key], verbosity, 'Minimum')
+
+                add_point(exp_min_x, exp_min_y, key, sp_freq_list[key], exp_amp_list[key], verbosity, 'Minimum')
+
+        # Check if smoothened curve is at a maximum
+        if (smooth_list[key] > smooth_list[key - 2] and smooth_list[key] > smooth_list[key + 2]):
+            add_point(exp_max_x, exp_max_y, key, sp_freq_list[key], exp_amp_list[key], verbosity, 'Maximum')
+            last_max_key = key
+
+
+    # If there's a big gap, add a point halfway
+    if last_max_key/len(sp_freq_list) < 0.5 :
+        halfway = (len(sp_freq_list) - last_max_key)//2 + last_max_key
+        average = (exp_max_y[-1] + exp_amp_list[-1])/2
+        ###Spiderutils.whocalledme(387, ['halfway', 'average'], [halfway, average])
+        add_point(exp_max_x, exp_max_y, key, sp_freq_list[halfway], average, verbosity, 'Maximum')
+    add_point(exp_max_x, exp_max_y, key, sp_freq_list[-1], exp_amp_list[-1], verbosity, 'Maximum')
+    add_point(exp_min_x, exp_min_y, key, sp_freq_list[-1], exp_amp_list[-1], verbosity, 'Minimum')
+
+    # Change to arrays
+    exp_max_x_np = np.array(exp_max_x)
+    exp_max_y_np = np.array(exp_max_y)
+    exp_min_x_np = np.array(exp_min_x)
+    exp_min_y_np = np.array(exp_min_y)
+
+    X_np = np.array(sp_freq_list)
+
+    # Splinefit extrema
+    exp_min_tck = interpolate.splrep(exp_min_x_np, exp_min_y_np, s=backgd_smooth)
+    exp_max_tck = interpolate.splrep(exp_max_x_np, exp_max_y_np, s=envelope_smooth)
+    # s==smoothing factor
+
+    # Evaluate splines
+    exp_min_spline = interpolate.splev(X_np, exp_min_tck)
+    exp_max_spline = interpolate.splev(X_np, exp_max_tck)
+
+    # will subtract background and apply envelope
+    exp_subtract = []
+    exp_envelope = []
+
+    # Subtract minimum and multiply by envelope
+    for key in range(0, len(sp_freq_list)):
+        diff = exp_amp_list[key] - exp_min_spline[key]
+        exp_subtract.append(diff)
+        exp_envelope.append(exp_max_spline[key] - exp_min_spline[key])
+
+    return exp_min_spline, exp_subtract, exp_envelope
+
 
 ###################################################################
 #
@@ -188,62 +395,51 @@ def getFiles(filetypes=None):
 
 class CTFplot:
     " default values "
-    def __init__(self, master, filename=None, args=None):
+    ###def __init__(self, master, filename=None, args=None):
+    def __init__(self, master, filename=None, args=None, roo=None):
+        ###Spiderutils.whocalledme( 297,'pixsize', 'pixsize' in args.__dict__ ) ; exit ()
         # first set defaults
         self.top = master
-        self.cs = tkinter.StringVar();      self.cs.set(2.0)
-        self.defocus = tkinter.StringVar(); self.defocus.set(20000)
-        self.kev = tkinter.StringVar();     self.kev.set(200)
-        self.pixsize = tkinter.StringVar(); self.pixsize.set(2.82)
-        self.src = tkinter.StringVar();     self.src.set(0.0)
-        self.spread = tkinter.StringVar();  self.spread.set(0.0)
-        self.acr = tkinter.StringVar();     self.acr.set(0.1)
-        self.gep = tkinter.StringVar();     self.gep.set(2.0)
-        self.defocusfile = ""
-        self.tfed = []
-        got_pixsize = 0
-        got_kev = 0
-        max_defocus = 60000
+        self.cs = tkinter.StringVar();      self.cs.set(args.cs)
+        self.defocus = tkinter.StringVar(); self.defocus.set( min(args.defaultdf, args.maxdf) )
+        self.kev = tkinter.StringVar()
+        self.pixsize = tkinter.DoubleVar()
+        self.src = tkinter.StringVar();     self.src.set(args.src)
+        self.spread = tkinter.StringVar();  self.spread.set(args.spread)
+        self.acr = tkinter.StringVar();     self.acr.set(args.acr)
+        self.gep = tkinter.StringVar();     self.gep.set(args.gep)
+        self.defocusfile = args.defocus  #### ""
+        self.tfed = roo  #### []
+        self.verbose = args.verbose
+        self.args = args
 
-        # then process args, if any
-        if args != None:
-            keys = list(args.keys())
-            for key in keys:
-                k = key.replace('-','') # delete minus sign
-                if k == "defocus":
-                    self.defocusfile = args[key]
-                elif k == "tfed":
-                    self.tfed = args[key]
-                else:
-                    s = "self." + k + ".set(" + args[key] + ")"
-                    try:
-                        #print "%s : %s" % (k,s)
-                        eval(s)
-                        if k == 'pixsize' and float(self.pixsize.get()) != 0:
-                            got_pixsize = 1
-                        elif k == 'kev' and float(self.kev.get()) != 0:
-                            got_kev = 1
-                    except:
-                        print("key %s not recognized" % key)
+        # If pixel size and voltage were provided on command line, you can bypass the initial parameter window
+        if 'kev' in args.__dict__:
+            self.kev.set(args.kev)
+        else:
+            self.kev.set(VOLTAGE)
 
-        self.multfactor = 1.0  #1000.0  # for input data
-        self.datamax = 1.0  # used to control height of model
-        self.cutoff = 40     # index (integer) of modelmax on x axis
-        self.modelmax = 1.0
-        self.factor = 1.0
-        self.askParms = 1
+        if 'pixsize' in args.__dict__:
+            self.pixsize.set(args.pixsize)
+        else:
+            self.pixsize.set(PIXSIZE)
 
-        # don't start with parameter window if have pixsize and kev
-        if got_pixsize and got_kev:
-            self.askParms = 0        
-        
-        self.max_spat_freq = 1.0 / (2.0 * float(self.pixsize.get()))
+        if 'pixsize' in args.__dict__ and 'kev' in args.__dict__ :
+            self.askParms = 0
+        else:
+            self.askParms = 1
+
+        max_defocus = args.maxdf
+        self.expmult = args.expmult
+        self.modmult = 1.0  # I don't know what this does
+
+        self.max_spat_freq = 1.0 / ( 2.0 * self.pixsize.get() )
         self.kappa = -math.pi**2 / (16.0 * math.log(2.0))
         self.infinity = 1e50
         self.ymax = tkinter.DoubleVar()  #### StringVar()
         self.xmin = tkinter.StringVar() ; self.xmin.set(0)
         self.modymax = tkinter.StringVar()
-        self.n = 250
+        self.n = args.nsam
 
         # arrays for holding data columns
         self.arr = {'frq':[], 'bgd':[], 'sub':[], 'env':[], 'roo':[]}
@@ -256,8 +452,10 @@ class CTFplot:
         self.showEnv = tkinter.IntVar() ; self.showEnv.set(1)
         self.showMod = tkinter.IntVar() ; self.showMod.set(1)
         self.gridShow= tkinter.IntVar() ; self.gridShow.set(0)
-        self.colors = {'bgd':'#00cc00', 'sub':'red', 'env':'#9999ff',
-                       'roo':'#ff9900',  'model':'white'}
+
+        # colors from https://jfly.uni-koeln.de/color/
+        self.colors = {'bgd':'#009e74', 'sub':'#cc79a7', 'env':'#9999ff',
+                       'roo':'#e69d00',  'model':'white'}
 
         # by default, data are squared
         self.squared = tkinter.IntVar() ; self.squared.set(1)
@@ -276,7 +474,7 @@ class CTFplot:
         self.E = []
 
         if filename != None:
-            if not self.openCtfFile(filename):
+            if not self.openRooDoc(filename):
                 filename = None
 
         if len(self.arr['frq']) > 0:
@@ -305,11 +503,11 @@ class CTFplot:
                                  relief='flat')
         Filebtn.pack(side=tkinter.LEFT, padx=5, pady=5)
         Filebtn.menu = tkinter.Menu(Filebtn, tearoff=0)
-        Filebtn.menu.add_command(label='Open simple defocus file',
+        Filebtn.menu.add_command(label='Open defocus file',
                                  command=self.openDefocus)
-        Filebtn.menu.add_command(label='Open TF ED file',
-                                 command=self.callOpenTfed)
-        Filebtn.menu.add_command(label='Open 1D file series',
+        Filebtn.menu.add_command(label='Open TF ED profile',
+                                 command=self.plotCtfProfile)
+        Filebtn.menu.add_command(label='Open 1D profile series',
                                  command=self.fileSeries)
         Filebtn.menu.add_command(label='Save defocus as...',
                                  command=self.saveDefocusAs)
@@ -416,7 +614,6 @@ class CTFplot:
 
         " model height scale "
         mlabel = tkinter.Label(fy,text="model\nheight")
-        ###print("mlabel.cget('text')", mlabel.cget('text'))
         mmax = 1.0   #string.atof(self.modymax.get())
 
         self.mslider = tkinter.Scale(fy, orient='vertical', from_= mmax, to=0.0,
@@ -439,46 +636,24 @@ class CTFplot:
         " the main plot "
         fg = tkinter.Frame(ff, relief='raised', borderwidth=2)
         self.fig = figure.Figure(figsize=(6.5, 5), dpi=100)
-        ###self.fig.suptitle("Transfer function demo")
         self.ax = self.fig.add_subplot(111)
         self.ax.ticklabel_format( axis='y', style='sci', scilimits=(0,0) )  # can't get exponential notation to work
-        ###self.ax.yaxis.set_major_formatter(ticker.ScalarFormatter(useMathText=True))
 
-        #self.g = Pmw.Blt.Graph(fg, plotbackground="black" )
         self.ax.set_facecolor("black")
         self.ax.set_xlabel("Spatial frequency, 1/Å")
-        self.ax.set_ylabel("Contrast transfer")
+        self.ax.set_ylabel("Amplitude")
         self.fig.subplots_adjust(left=0.125, bottom=0.125, top=0.95, right=0.95)  # manually pads the margins
         self.ax.yaxis.major.formatter._useMathText = True
 
         # the model curve
         self.plotdict = {}
         self.plotdict['model'], = self.ax.plot(self.X, self.Y, color = self.colors['model'])
-        #self.g.line_create('model',
-                     #xdata=tuple(self.X),
-                     #ydata=tuple(self.Y),
-                     #color = self.colors['model'],
-                     #symbol='')
-        #self.g.legend_configure(hide=1)
-
-        #for curve in self.curves:
-            ##self.g.line_create(curve,
-                         ##xdata=tuple(self.X),
-                         ##ydata=tuple(self.arr[curve]),
-                         ##color = self.colors[curve],
-                         ##symbol='')
-            #self.plotdict[curve], = self.ax.plot(self.X, self.arr[curve], color = self.colors[curve])
 
         # Embed the Figure in the Tkinter Frame
         self.canvas = backend_tkagg.FigureCanvasTkAgg(self.fig, master=fg)
         self.canvas.draw()
         self.canvas.get_tk_widget().pack(side=tkinter.TOP, fill=tkinter.BOTH, expand=1)
 
-        ## fix the limits of the axes (o.w. axes move, not plot)
-        #ymin,ymax = self.g.axis_limits("y")
-        #xmin,xmax = self.g.axis_limits("x")
-        #self.g.axis_configure("y", min=ymin, max=ymax)
-        #self.g.axis_configure("x", min=xmin, max=xmax, title="Spatial Frequency")
         self.xmin.set(0)
         xmax = self.max_spat_freq
         xmin=float( self.xmin.get() )
@@ -497,7 +672,6 @@ class CTFplot:
         saveBut = tkinter.Button(fg, text='Save Defocus', command=self.saveDefocus)
         
         fl = tkinter.Frame(fg, relief='sunken', borderwidth=2)
-        #self.roolabel = tkinter.Label(fl, text=self.roofile, background=filebgdcolor)
         self.tfedlabel = tkinter.Label(fl, text=os.path.basename(self.tfedfile))
         self.defocuslabel = tkinter.Label(fl, text=os.path.basename(self.defocusfile))
         self.savelabel = tkinter.Label(fl, text=os.path.basename(self.savefile))
@@ -505,7 +679,6 @@ class CTFplot:
         self.defocuslabel.pack(side='top', padx=10, pady=5)
         self.savelabel.pack(side='top', padx=10, pady=5)
 
-        ###self.g.pack(side='top', fill='both', expand=1)
         xslider.pack(side='left', padx=5, pady=5)
         xbutton.pack(side='left', padx=5, pady=5)
         fl.pack(side='right', padx=10, pady=10)
@@ -638,7 +811,7 @@ class CTFplot:
             f1 = self.infinity
             f2 = self.infinity
 
-        pixsize = float(self.pixsize.get())
+        pixsize = self.pixsize.get()
         if pixsize != 0:
             self.max_spat_freq = 1.0 / (2.0 * pixsize)
         km1   = f2 * self.max_spat_freq
@@ -688,12 +861,10 @@ class CTFplot:
         else:
             if ymax != 0:
                 f = float(self.modymax.get()) * self.ymax.get()  #### float(self.ymax.get())
-                self.factor = f / ymax
+                self.modmult = f / ymax
             for i in range(self.n):
-                self.Y[i] = self.Y[i] * self.factor
+                self.Y[i] = self.Y[i] * self.modmult
 
-        ##if hasattr(self,'g'):
-            ##self.g.element_configure('model', ydata=tuple(self.Y))
         if hasattr(self,'plotdict'):
             self.plotdict['model'].set_ydata(self.Y)
 
@@ -704,7 +875,6 @@ class CTFplot:
             messagebox.showerror('ERROR!!', 'Model height cannot be adjusted when using empircal envelope')
             return
         self.computeModelCtf()
-        ###self.top.update_idletasks()
         self.fig.canvas.draw_idle()
 
     def replot(self):
@@ -715,11 +885,10 @@ class CTFplot:
         self.showlist['env'] = self.showEnv.get()
         self.showlist['model'] = self.showMod.get()
         self.newymax()
-        ###Spiderutils.whocalledme(718, "self.ymax", self.ymax.get())
+        if self.verbose>=2 : print("replot: ymax", self.ymax.get())
         self.computeModelCtf()
         self.showCurves()
-        ##Spiderutils.whocalledme(752, "get_ylim", self.ax.get_ylim() )
-        ##print()
+        if self.verbose>=2 : print("replot: get_ylim", self.ax.get_ylim(), '\n' )
 
     def showCurves(self):
         # In case model is invisible...
@@ -732,17 +901,18 @@ class CTFplot:
         self.ax.autoscale_view()
 
         # Restore visibility
-        for curve in self.curves:
+        for curve in self.curves+['model']:
             if curve in self.plotdict and self.showlist[curve]:
                 self.plotdict[curve].set_visible(True)
+            elif curve in self.plotdict:
+                self.plotdict[curve].set_visible(False)
 
         self.fig.canvas.draw_idle()
 
     def newymax(self):
         " compute ymax over all curves except model "
         # get xmin and index into self.X
-        ##Spiderutils.whocalledme(769)
-        ##Spiderutils.whocalledme(770, "self.tfedfile", self.tfedfile)
+        if self.verbose>=2 : print("newymax: self.tfedfile", self.tfedfile)
         xmin = float(self.xmin.get())
         for i in range(self.n):
             if self.X[i] > xmin:
@@ -751,7 +921,6 @@ class CTFplot:
         # i is index
         M = []
         ymax = 0
-        showmax = ''
 
         for curr_key in self.showlist.keys():
             if curr_key != 'frq' and curr_key != 'model':
@@ -760,7 +929,6 @@ class CTFplot:
                     M.append(max(newlist))
                     if max(newlist) > ymax:
                         ymax = max(newlist)
-                        showmax= curr_key
 
         if len(M) == 0: return
         ymax =  max(M)
@@ -772,7 +940,6 @@ class CTFplot:
                                    tickinterval = ymax/5.0,
                                    resolution = ymax/50.0)
             self.yslider.set(ymax)
-            ###self.g.axis_configure("y", max=ymax, min=0.0)
 
     def resetYmax(self):
         self.newymax()
@@ -782,7 +949,7 @@ class CTFplot:
         self.fig.canvas.draw_idle()
 
     def xupdate(self, scalevalue=None):
-        pixsize = float(self.pixsize.get())
+        pixsize = self.pixsize.get()
         if pixsize == 0:
             return
         self.max_spat_freq = 1.0 / (2.0 * pixsize)
@@ -793,7 +960,6 @@ class CTFplot:
         for curve in self.curves:
             # If dictionary entry not yet present, then create new plot, else replace x_data
             if curve not in self.plotdict:
-                #self.g.element_configure(curve, xdata=tuple(self.X))
                 if len(self.arr[curve]) == len(self.X):
                     self.plotdict[curve], = self.ax.plot(self.X, self.arr[curve], color = self.colors[curve])
                 elif len(self.arr[curve]) != 0 :
@@ -808,8 +974,7 @@ class CTFplot:
     def xminupdate(self, scalevalue=None):
         xmin = float(self.xmin.get())
         if xmin < self.max_spat_freq:
-            ###self.g.axis_configure("x", min=xmin)
-            ##Spiderutils.printvars("xmin", typeTF=True)
+            if self.verbose>=2 : print("xminupdate: xmin", xmin)
             self.ax.set_xlim(xmin)
             self.fig.canvas.draw_idle()
         
@@ -826,36 +991,31 @@ class CTFplot:
         if type(self.tfedfile) == type(""):
             self.tfedlabel.configure(text=os.path.basename(self.tfedfile))
     
-    def callOpenTfed(self, filename=None):
-        if not self.openCtfFile(filename=filename):
+    def plotCtfProfile(self, filename=None):
+        if not self.openRooDoc(filename=filename):
             return
         self.xupdate()
-        ###self.replot()
 
         # Replace y values
         for curve in self.curves:
             self.plotdict[curve].set_ydata(self.arr[curve])
-            #if len(self.arr[curve]) > 0:
-                #self.g.element_configure(curve,
-                                         #ydata=tuple(self.arr[curve]))
         self.replot()
         self.resetYmax()  # I don't know why I need this
         self.setFileLabels()
 
-    def openCtfFile(self, filename=None):
+    def openRooDoc(self, filename=None):
         if filename == None or filename == "":
             filename = filedialog.askopenfilename()
             if filename == None or filename == "":
                 return 0
-        A = readCtfDoc(filename, self.multfactor, self.squared.get())
+        A = readCtfDoc(filename, self.expmult, self.squared.get())
 
         if len(A) == 0:
-            print("openCtfFile: error - readCtfDoc failed")
+            print("openRooDoc: error - readCtfDoc failed")
             return 0
 
         # single-column CTF doc file
         elif len(A) == 1:  # roofile
-            A0 = A[0]
             self.arr['roo'] = A[0] ; self.showRoo.set(1)
             self.roofile = filename
 
@@ -866,21 +1026,33 @@ class CTFplot:
             self.arr['sub'] = A[2]
             self.arr['env'] = A[3]
             self.arr['roo'] = A[4]
+            self.curves = ['bgd','sub','env', 'roo']
             self.tfedfile = filename
 
         # CTF FIND file
-        elif len(A) == 4:
-            self.arr['frq'] = A[0] ; self.X = self.arr['frq']
+        elif len(A) == 2:
+            self.tfedfile = filename
+
+            # CTF FIND shows spatial frequency in reciprocal pixels, not Angstroms
+            self.arr['frq'] = [ f/self.pixsize.get() for f in A[0] ]
+            self.X = self.arr['frq']
             self.arr['roo'] = A[1]
 
-            # Update these if&when we calculate them
-            self.showBgd.set(0) #;self.arr['bgd'] = A[1] #; self.showBgd.set(1)
-            self.showSub.set(0) #;self.arr['sub'] = A[2] #; self.showSub.set(1)
-            self.showEnv.set(0) #;self.arr['env'] = A[3] #; self.showEnv.set(1)
-            self.tfedfile = filename
+            # Perform background subtraction
+            self.arr['bgd'], self.arr['sub'], self.arr['env'] = fitSpline(
+                self.arr['frq'],
+                self.arr['roo'],
+                window_size=self.args.winsize,
+                poly_order=self.args.poly,
+                start_res=self.args.minres,
+                backgd_smooth=self.args.smoothbkgd,
+                envelope_smooth=self.args.smoothenv,
+                verbosity=self.verbose
+                )
 
         else:
             print(f"Don't recognize {filename} with {len(A)} columns")
+            os.system(f"head {filename}")
             return 0
 
         self.n = len(A[0])
@@ -951,7 +1123,6 @@ class CTFplot:
             
         return displaylist
             
-
     def fileSeries(self, flist=None):
         "create a listbox from a user-specified set of files"
         # get the file list
@@ -976,13 +1147,13 @@ class CTFplot:
         else:
             self.boxwin = tkinter.Toplevel(self.top)
             self.boxwin.title("File series")
-            self.boxwin.geometry('215x290')
+            self.boxwin.geometry('288x288')
             self.boxwin.bind( '<Control-g>', lambda e, w=self.boxwin: self.getSize(w) )
             flabels = tkinter.Frame(self.boxwin)
-            bf = tkinter.Button(flabels, text='Files',
+            bf = tkinter.Button(flabels, text='Sort by file',
                         command=lambda self=self,s='files':self.makedisplaylist(sort=s))
             bf.pack(side='left',padx=5,pady=5)
-            bd = tkinter.Button(flabels, text='Defocus',
+            bd = tkinter.Button(flabels, text='Sort by defocus',
                         command=self.defocusButtonfunc)
             bd.pack(side='right',padx=5,pady=5)
             flabels.pack(side='top')
@@ -1002,7 +1173,7 @@ class CTFplot:
         filename = self.fileDict[fn][1]  # full path
         if len(f) == 2: # "filename   defocus"
             self.defocus.set(f[1])
-        self.callOpenTfed(filename=filename)
+        self.plotCtfProfile(filename=filename)
 
     def defocusButtonfunc(self):
         " if defocus data loaded, sorts on that column; else loads data"
@@ -1024,6 +1195,10 @@ class CTFplot:
         D = readDefocus(filename) # list of (mic#, defocus) pairs
         if len(D) == 0:
             self.defDict = {}
+            cmd=f"head {os.path.relpath(filename)}"
+            print(cmd, '\n')
+            os.system(cmd)
+            messagebox.showerror('WARNING!', f"Defocus file '{os.path.relpath(filename)}' had no valid entries. See log window for details.")
             return 0
         for item in D:
             micnum = item[0]
@@ -1057,7 +1232,7 @@ class CTFplot:
         self.setFileLabels()
 
         if self.tfedfile == "":
-            print("defocus data will be saved to %s" % self.savefile)
+            if self.verbose>=1 : print("defocus data will be saved to %s" % self.savefile)
             return
 
         micnum = self.filenumber(os.path.basename(self.tfedfile))
@@ -1084,7 +1259,7 @@ class CTFplot:
         else:
             headers = ['MICROGRAPH','DEFOCUS']
             Spiderutils.writedoc(outfile,columns=[[micnum],[defocus]],headers=headers)
-        print("defocus %s saved to %s" % (defocus, outfile))
+        if self.verbose>=1 : print("defocus %s saved to %s" % (defocus, outfile))
     
     def showGrid(self):
         if self.gridShow.get():
@@ -1096,9 +1271,8 @@ class CTFplot:
 
     def showSquared(self):
         " variable changed automatically in checkbutton "
-        # self.squared.set(self.squared.get())
         if self.tfedfile != "":
-            self.callOpenTfed(filename=self.tfedfile)
+            self.plotCtfProfile(filename=self.tfedfile)
 
     def quit(self):
         if hasattr(self,'ParmWindow'):
@@ -1110,74 +1284,15 @@ class CTFplot:
 
 # ------- end CTFplot class definition
 
-
-def getopts(argv):
-    "get command line arguments, return a dictionary"
-    opts = {}
-    while argv:
-        if argv[0][0] == '-':        # find "-name value" pairs
-            if argv[0] == "-tfed":
-                opts[argv[0]] = argv[1:]
-                break  # argv = None
-            else:
-                opts[argv[0]] = argv[1]  # dict key is "-name" arg
-                argv = argv[2:]                    
-        else:
-            # if there's no flag, assume remainder of args is a tfed file list
-            opts["-tfed"] = argv   # argv = argv[1:]
-            break
-    #print opts
-    return opts
-
-def printhelp():
-    help = "Usage: ctfmatch.py [-arg value]\n " + \
-           "The remaining arguments are (-keyword value) pairs. The following are supported:\n" + \
-           "   -cs (spherical aberration)\n" + \
-           "   -kev (electron energy)\n" + \
-           "   -pixsize (A/pixel)\n" + \
-           "   -src (source size)\n" + \
-           "   -spread (defocus spread)\n" + \
-           "   -acr (amplitude contrast ratio)\n" + \
-           "   -gep (Gaussian envelope parameter)\n" + \
-           "   -defocus (SPIDER doc file with defocus values)\n" + \
-           "   -tfed files* (output from TFED - THIS MUST BE THE LAST ARGUMENT)\n" + \
-           "where files* are output doc files from TF ED command with 4 columns:\n" + \
-           "   spatial frequency, background, subtracted data, envelope.\n" +\
-           "e.g.: ctfmatch.py -cs 2.20 -kev 200 -pixsize 2.82\n" + \
-           "e.g.: ctfmatch.py ctf003.dat -pixsize 3.76 -defocus defocus.acn -tfed ctf*\n" + \
-           "      ctfmatch.py -help     (prints this message)"
-    print(help)
-
 if __name__ == '__main__':
 
-    nargs = len(sys.argv[1:])
+    args, tfed = parse_command_line()
+    #print(args)
+    #print('tfed',tfed)
+    #exit()
 
-    if nargs > 0:
-        h = sys.argv[1]
-        if h == '-help' or h == '-h':
-            printhelp()
-            sys.exit()
-        if h[0] != '-':
-            argv = sys.argv[1:]
-            filename = h
-        else:
-            argv = sys.argv[1:]
-            filename = ""
-        args = getopts(argv)
- 
     master = tkinter.Tk()
     master.title("CTF Match")
     master.option_add("*Font", "Helvetica 12 bold")
-                 
-    if nargs == 0:
-        c = CTFplot(master)
-    elif nargs > 1 and filename != "":
-        c = CTFplot(master, filename=filename, args=args)
-    elif nargs > 0 and filename != "":
-        c = CTFplot(master, filename=filename)
-    elif nargs > 1 and filename == "":
-        c = CTFplot(master, args=args)
-    else:
-        printhelp()
-        sys.exit()
-    master.mainloop() 
+    CTFplot(master, args=args, roo=tfed)
+    master.mainloop()

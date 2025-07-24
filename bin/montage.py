@@ -141,8 +141,8 @@ class montage:
 
         self.selectClasses = {}
         self.selectClasses['0'] = selectionClass(0,'0',sysbgd,'deselect', actbgd)
-        self.selectClasses['1'] = selectionClass(1,'1','#009e74','class 1', '#6a9e90')  # bluish green
-        self.selectClasses['2'] = selectionClass(2,'2','#d65d00','class 2', '#d6996b')  # vermillion
+        self.selectClasses['1'] = selectionClass(1,'1','#009e73','class 1', '#6a9e90')  # bluish green
+        self.selectClasses['2'] = selectionClass(2,'2','#d55e00','class 2', '#d6996b')  # vermillion
         self.selectClasses['3'] = selectionClass(3,'3','#0071b2','class 3', '#6b98b3')  # blue
         self.selectedColor = tkinter.StringVar()
         self.selectedColor.set('1')
