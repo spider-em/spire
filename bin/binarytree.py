@@ -253,8 +253,6 @@ class BinaryTreeCanvas:
     def test(self, event=None) :
         print("select_dictionary length:", len(self.select_dictionary))
         print("select_dictionary:", self.select_dictionary)
-        #print "master:", hasattr(self,'master')
-        #print "tree_canvas:", hasattr(self,'tree_canvas')
 
     def selectClass(self, widget) :
         # get current color

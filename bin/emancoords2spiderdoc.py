@@ -63,7 +63,6 @@ if sys.argv[1:]:
 #            ycenter = mic_y - (ycoord + ydim/2)
 
             dictF[key] = [xcenter,ycenter,key,dummy]
-#           print filenum
 
 #        headers = ['XCOORD','YCOORD','PARTICLE','PEAK_HT','XDIM','YDIM']
         headers = ['XCOORD','YCOORD','PARTICLE','PEAK_HT']
@@ -76,5 +75,4 @@ if sys.argv[1:]:
         print("Error!", "Unable to read %s" % file)
 else:
     print("syntax: emancoords2spiderdoc.py input_eman_coords output_spider_doc")
-#    print "syntax: emancoords2spiderdoc.py input_eman_coords input_micrograph output_spider_doc"
 

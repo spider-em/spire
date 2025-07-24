@@ -74,4 +74,3 @@ if sys.argv[1:]:
         print("Error!", "Unable to read %s" % file)
 else:
     print("syntax: emanrctcoords2spiderdoc.py input_eman_coords output_spider_doc")
-###    print "syntax: emancoords2spiderdoc.py input_eman_coords input_micrograph output_spider_doc"

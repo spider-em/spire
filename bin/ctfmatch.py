@@ -40,7 +40,7 @@ AMP_CONTRAST=0.1
 # For spline-fitting
 WIN_SIZE=11    # Window size for filtering CTF profile using Savitzky-Golay filter
 POLY_ORDER=1   # Polynomial order for filtering CTF profile using Savitzky-Golay filter
-MIN_RES=30     # CTF minima will be ignored before this resolution (in A)
+MIN_RES=50     # CTF minima will be ignored before this resolution (in A)
 SMOOTH_BKGD=1  # Smoothening factor for background during spline-fitting
 SMOOTH_ENV=1   # Smoothening factor for envelope during spline-fitting
 
@@ -327,26 +327,27 @@ def fitSpline(sp_freq_list, exp_amp_list, window_size=11, poly_order=1, start_re
     def add_point(xcoords, ycoords, key, xvalue, yvalue, verbosity, min_max):
         xcoords.append(xvalue)
         ycoords.append(yvalue)
+        if xvalue != 0 : angstroms = 1/xvalue
         if min_max == 'Maximum' and verbosity == 3:
-            print('Maximum', key, xvalue, yvalue)
+            print('Maximum', key, xvalue, yvalue, angstroms)
         if min_max == 'Minimum' and verbosity == 4:
-            print('Minimum', key, xvalue, yvalue)
+            print('Minimum', key, xvalue, yvalue, angstroms)
 
     # Search experimental and theoretical curves for extrema (skipping lowest-resolution values)
     for key in range(2, len(sp_freq_list) - 2):
-        # Check if smoothened curve is at a minimum (skipping low-resolution values)
-        if (smooth_list[key] < smooth_list[key - 2] and smooth_list[key] < smooth_list[key + 2]):
-            # Ignore low-resolution minima
-            if sp_freq_list[key] > 1/start_res :
+        # Ignore low-resolution minima
+        if sp_freq_list[key] > 1/start_res :
+            # Check if smoothened curve is at a minimum (skipping low-resolution values)
+            if (smooth_list[key] < smooth_list[key - 2] and smooth_list[key] < smooth_list[key + 2]):
                 # If first point, then prepend the same value at x=0
                 if len(exp_min_y) == 0:
                     add_point(exp_min_x, exp_min_y, key, sp_freq_list[0], exp_amp_list[key], verbosity, 'Minimum')
 
                 add_point(exp_min_x, exp_min_y, key, sp_freq_list[key], exp_amp_list[key], verbosity, 'Minimum')
 
-        if (smooth_list[key] > smooth_list[key - 2] and smooth_list[key] > smooth_list[key + 2]):
-            add_point(exp_max_x, exp_max_y, key, sp_freq_list[key], exp_amp_list[key], verbosity, 'Maximum')
-            last_max_key = key
+            if (smooth_list[key] > smooth_list[key - 2] and smooth_list[key] > smooth_list[key + 2]):
+                add_point(exp_max_x, exp_max_y, key, sp_freq_list[key], exp_amp_list[key], verbosity, 'Maximum')
+                last_max_key = key
 
     # If there's a big gap, add a point halfway
     if last_max_key/len(sp_freq_list) < 0.5 :
@@ -380,7 +381,7 @@ def fitSpline(sp_freq_list, exp_amp_list, window_size=11, poly_order=1, start_re
     # Subtract minimum and multiply by envelope
     for key in range(0, len(sp_freq_list)):
         diff = exp_amp_list[key] - exp_min_spline[key]
-        exp_subtract.append(diff)
+        exp_subtract.append( max(diff,0) )  # ensure that it's at least zero
         exp_envelope.append(exp_max_spline[key] - exp_min_spline[key])
 
     return exp_min_spline, exp_subtract, exp_envelope
@@ -1028,12 +1029,31 @@ class CTFplot:
 
         # CTF FIND file
         elif len(A) == 2:
-            self.tfedfile = filename
+            ## CTF FIND shows spatial frequency in reciprocal pixels, not Angstroms
+            #self.arr['frq'] = [ f/self.pixsize.get() for f in A[0] ]
+            #self.arr['roo'] = A[1]
 
-            # CTF FIND shows spatial frequency in reciprocal pixels, not Angstroms
-            self.arr['frq'] = [ f/self.pixsize.get() for f in A[0] ]
+            pxsz = self.pixsize.get()
+            #self.arr['roo'] = []
+            #print('roo', len(self.arr['roo'])) ; exit()
+            #length=len(self.X) ; roo=self.arr['roo'] ; Spiderutils.printvars(['roo','length'], True)
+            self.arr['roo'] = [0.]*len(A[0])
+            self.arr['frq'] = [0.]*len(A[0])
+
+            for key, respx in enumerate(A[0]):
+                # CTF FIND shows spatial frequency in reciprocal pixels, not Angstroms
+                self.arr['frq'][key] = respx/pxsz
+
+                # Mask out the values wthin the resolution limit
+                if respx/pxsz < 1/self.args.minres:
+                    self.arr['roo'][key] = min(A[1])
+                else:
+                    self.arr['roo'][key] = A[1][key]
+
+                ###print(f"key {key}, frq {self.arr['frq'][key]}, roo {self.arr['roo'][key]}")
+
+            self.tfedfile = filename
             self.X = self.arr['frq']
-            self.arr['roo'] = A[1]
 
             # Perform background subtraction
             self.arr['bgd'], self.arr['sub'], self.arr['env'] = fitSpline(
