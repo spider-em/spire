@@ -26,8 +26,20 @@ from Spider    import Spiderutils
 import webbrowser
 webpage = "http://www.wadsworth.org/spider_doc/spider/spire/tools-docs/ctfmatch.html"
 
+USAGE = """
+  %s <options> <optional_profile_docfiiles>
+
+Wild cards can be used for doc files, e.g.:
+  %s -defocus defocus.dat power/roo_doc_00*
+
+Providing both the pixel size and voltage will bypass the initial parameter window, e.g.:
+  %s  -pixsize 2.82 -kev 200
+
+
+""" % ( (os.path.basename(__file__),)*3 )
+MODIFIED="Modified 2025 Jul 25"
+
 # Constants & defaults
-MODIFIED="Modified 2025 Jul 24"
 MAX_VERBOSITY=2
 SPHERICAL_ABERRATION=2.0
 VOLTAGE=200
@@ -43,18 +55,6 @@ POLY_ORDER=1   # Polynomial order for filtering CTF profile using Savitzky-Golay
 MIN_RES=50     # CTF minima will be ignored before this resolution (in A)
 SMOOTH_BKGD=1  # Smoothening factor for background during spline-fitting
 SMOOTH_ENV=1   # Smoothening factor for envelope during spline-fitting
-
-USAGE = """
-  %s <options> <optional_profile_docfiiles>
-
-Wild cards can be used for doc files, e.g.:
-  %s -defocus defocus.dat power/roo_doc_00*
-
-Providing both the pixel size and voltage will bypass the initial parameter window, e.g.:
-  %s  -pixsize 2.82 -kev 200
-
-
-""" % ( (os.path.basename(__file__),)*3 )
 
 def parse_command_line():
     """
@@ -192,6 +192,7 @@ def parse_command_line():
         default=1.,
         help="Multiplcation factor for experimental data")
 
+    # Return unrecognized parameters too, might be filenames
     return parser.parse_known_args()
 
 def ctfhelp():
@@ -393,7 +394,6 @@ def fitSpline(sp_freq_list, exp_amp_list, window_size=11, poly_order=1, start_re
 
 class CTFplot:
     " default values "
-    ###def __init__(self, master, filename=None, args=None):
     def __init__(self, master, filename=None, args=None, roo=None):
         ###Spiderutils.whocalledme( 297,'pixsize', 'pixsize' in args.__dict__ ) ; exit ()
         # first set defaults
@@ -1309,6 +1309,7 @@ if __name__ == '__main__':
     nonfiles = []
     for fn in tfed:
         if not os.path.exists(fn) : nonfiles.append(fn)
+
     if len(nonfiles) > 0:
         print()
         print( "ERROR!! The following are either unrecognized flags or non-existent files:")
