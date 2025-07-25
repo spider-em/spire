@@ -24,7 +24,6 @@ import Pmw
 
 from   Spider  import Spiderutils
 import tkinter  #### from   tkinter import *
-from tkinter import font
 
 try:
     from   PIL import Image, ImageTk
@@ -81,7 +80,6 @@ class BinaryTreeCanvas:
         self.good_color = '009e74'  # 'green'
         self.select_flag = 1
         self.bad_color = '#d65d00'  # 'red'
-        self.font = font.Font(family="mincho", size=12)
 
     def makeMenus(self):
         # ------- create the menu bar -------
@@ -91,24 +89,24 @@ class BinaryTreeCanvas:
         self.leftframe = tkinter.Frame(self.mBar) # , relief='raised', borderwidth=1)
 
         # Make the File menu
-        Filebtn = tkinter.Menubutton(self.leftframe, text='File', relief='flat', font=self.font)
+        Filebtn = tkinter.Menubutton(self.leftframe, text='File', relief='flat')
         Filebtn.pack(side=tkinter.LEFT, padx=5, pady=5)
         Filebtn.menu = tkinter.Menu(Filebtn, tearoff=0)
 
         Filebtn.menu.add_command(label='Save selection', underline=0,
-                                command=self.saveSelections, font=self.font)
+                                command=self.saveSelections)
         Filebtn.menu.add_command(label='Read selection', underline=0,
-                                command=self.readSelections, font=self.font)
+                                command=self.readSelections)
         Filebtn.menu.add_command(label='Close', underline=0,
-                                     command=self.master.destroy, font=self.font)
+                                     command=self.master.destroy)
         Filebtn['menu'] = Filebtn.menu
 
         # Make help menu
-        Helpbtn = tkinter.Menubutton(self.mBar, text='Help', underline=0, relief='flat', font=self.font)
+        Helpbtn = tkinter.Menubutton(self.mBar, text='Help', underline=0, relief='flat')
         Helpbtn.pack(side=tkinter.RIGHT, padx=5, pady=5)
         Helpbtn.menu = tkinter.Menu(Helpbtn, tearoff=0)
         Helpbtn.menu.add_command(label='Keyboard shortcuts', underline=0, 
-                                 command=self.shortcuts, font=self.font)
+                                 command=self.shortcuts)
         Helpbtn['menu'] = Helpbtn.menu
 
         # Pack menu bar
@@ -208,32 +206,32 @@ class BinaryTreeCanvas:
         rownum = 0
 
         scmain = tkinter.Frame(sc, borderwidth=2, relief=tkinter.RIDGE)
-        tkinter.Label(scmain, text='Main window:', font=self.font).grid(row=rownum, sticky=tkinter.W)
+        tkinter.Label(scmain, text='Main window:').grid(row=rownum, sticky=tkinter.W)
 
         rownum += 1
-        tkinter.Label(scmain, text='+', font=self.font                 ).grid(row=rownum, column=0, sticky=tkinter.W)
-        tkinter.Label(scmain, text='Add row', font=self.font           ).grid(row=rownum, column=1, sticky=tkinter.W)
+        tkinter.Label(scmain, text='+'                 ).grid(row=rownum, column=0, sticky=tkinter.W)
+        tkinter.Label(scmain, text='Add row'           ).grid(row=rownum, column=1, sticky=tkinter.W)
 
         rownum += 1
-        tkinter.Label(scmain, text='-', font=self.font                 ).grid(row=rownum, column=0, sticky=tkinter.W)
-        tkinter.Label(scmain, text='Remove row', font=self.font        ).grid(row=rownum, column=1, sticky=tkinter.W)
+        tkinter.Label(scmain, text='-'                 ).grid(row=rownum, column=0, sticky=tkinter.W)
+        tkinter.Label(scmain, text='Remove row'        ).grid(row=rownum, column=1, sticky=tkinter.W)
 
         rownum += 1
-        tkinter.Label(scmain, text='Control-s', font=self.font         ).grid(row=rownum, column=0, sticky=tkinter.W)
-        tkinter.Label(scmain, text='Save selections', font=self.font   ).grid(row=rownum, column=1, sticky=tkinter.W)
+        tkinter.Label(scmain, text='Control-s'         ).grid(row=rownum, column=0, sticky=tkinter.W)
+        tkinter.Label(scmain, text='Save selections'   ).grid(row=rownum, column=1, sticky=tkinter.W)
 
         rownum += 1
-        tkinter.Label(scmain, text='Control-r', font=self.font         ).grid(row=rownum, column=0, sticky=tkinter.W)
-        tkinter.Label(scmain, text='Read selections', font=self.font   ).grid(row=rownum, column=1, sticky=tkinter.W)
+        tkinter.Label(scmain, text='Control-r'         ).grid(row=rownum, column=0, sticky=tkinter.W)
+        tkinter.Label(scmain, text='Read selections'   ).grid(row=rownum, column=1, sticky=tkinter.W)
 
         rownum += 1
-        tkinter.Label(scmain, text='Control-w', font=self.font         ).grid(row=rownum, column=0, sticky=tkinter.W)
-        tkinter.Label(scmain, text='Close window', font=self.font      ).grid(row=rownum, column=1, sticky=tkinter.W)
+        tkinter.Label(scmain, text='Control-w'         ).grid(row=rownum, column=0, sticky=tkinter.W)
+        tkinter.Label(scmain, text='Close window'      ).grid(row=rownum, column=1, sticky=tkinter.W)
 
         scmain.pack(padx=5, pady=5, expand=1)
 
         okframe = tkinter.Frame(sc)
-        tkinter.Button(okframe, text="OK", command=sc.destroy, font=self.font).pack()
+        tkinter.Button(okframe, text="OK", command=sc.destroy).pack()
         sc.bind('<Return>', lambda p=self.master, w=sc: clickOK(p,w)) 
         okframe.pack()
 
@@ -355,6 +353,7 @@ if __name__ == "__main__":
 
     root = tkinter.Tk()
     root.title('binarytree.py')
+    root.option_add("*Font", "Helvetica 12 bold")
 
     tree = BinaryTreeCanvas(root, nodeTemplate, max_depth=max_depth, savefilename=savefilename)
     tree.makeMenus()

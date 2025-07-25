@@ -42,7 +42,7 @@ class Viewer:
         self.cy = im.size[1] // 2
         self.value = min(self.size) // 4
 
-        self.title = tkinter.Label( text=labeltext, font=("mincho 12") )
+        self.title = tkinter.Label( text=labeltext)
         self.title.pack()
                 
         im_width= im.size[0]
@@ -52,7 +52,7 @@ class Viewer:
         self.canvas.pack(side='top')
 
         scale = tkinter.Scale( master, orient=tkinter.HORIZONTAL, from_=0, to=im_width//2,
-                      resolution=1, command=self.update, length=im_width+1, font=("mincho 12") )
+                      resolution=1, command=self.update, length=im_width+1)
         scale.set(self.value)
         scale.bind("<ButtonRelease-1>", self.redraw)
         scale.pack()
@@ -60,10 +60,10 @@ class Viewer:
         # the button frame
         fr = tkinter.Frame(master)
         fr.pack(side='top', expand=1, fill='x')
-        back = tkinter.Button( fr, text="back", command=self.backframe, font=("mincho 12") )
+        back = tkinter.Button( fr, text="back", command=self.backframe)
         back.grid(row=0, column=0, sticky="w", padx=4, pady=4)
 
-        ilabel = tkinter.Label( fr, text="image number:", font=("mincho 12") )
+        ilabel = tkinter.Label( fr, text="image number:")
         ilabel.grid(row=0, column=1, sticky="e", pady=4)
 
         self.evar = tkinter.IntVar()
@@ -72,7 +72,7 @@ class Viewer:
         entry.grid(row=0, column=2, sticky="w", pady=4)
         entry.bind('<Return>', self.getimgnum)
         
-        next = tkinter.Button( fr, text="next", command=self.nextframe, font=("mincho 12") )
+        next = tkinter.Button( fr, text="next", command=self.nextframe)
         next.grid(row=0, column=3, sticky="e", padx=4, pady=4)
 
         self.top.bind_all('<Up>', self.nextframe)
@@ -150,5 +150,6 @@ if __name__ == "__main__":
         index= 0
 
     root = tkinter.Tk()
+    root.option_add("*Font", "Helvetica 12 bold")
     app = Viewer(root, filename, index)
     root.mainloop()
