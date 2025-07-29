@@ -72,7 +72,7 @@ class CTFplot:
         # Make the File menu
         Filebtn = tkinter.Menubutton(self.mBar, text='File', underline=0,
                                  relief='flat')
-        Filebtn.pack(side=tkinter.LEFT, padx=5, pady=5)
+        Filebtn.pack(side='left', padx=5, pady=5)
         Filebtn.menu = tkinter.Menu(Filebtn, tearoff=0)
         Filebtn.menu.add_separator()
         Filebtn.menu.add_command(label='Quit', underline=0,
@@ -82,7 +82,7 @@ class CTFplot:
         # Make the Option menu
         Optbtn = tkinter.Menubutton(self.mBar, text='Options', underline=0,
                                  relief='flat')
-        Optbtn.pack(side=tkinter.LEFT, padx=5, pady=5)
+        Optbtn.pack(side='left', padx=5, pady=5)
         Optbtn.menu = tkinter.Menu(Optbtn, tearoff=0)
 
         Optbtn.menu.add_checkbutton(label='Grid', underline=0,
@@ -112,7 +112,7 @@ class CTFplot:
         # Embed the Figure in the Tkinter Frame
         canvas = backend_tkagg.FigureCanvasTkAgg(self.fig, master=fg)
         canvas.draw()
-        canvas.get_tk_widget().pack(side=tkinter.TOP, fill=tkinter.BOTH, expand=1)
+        canvas.get_tk_widget().pack(side='top', fill='both', expand=1)
 
         self.envelope_line2d, = self.ax.plot(self.X, self.E)  # model
         if not self.envelopeShow.get() : self.envelope_line2d._visible = False

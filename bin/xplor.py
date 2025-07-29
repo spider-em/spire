@@ -290,9 +290,9 @@ class TreeNode:
             oldcursor = self.canvas['cursor']
             self.canvas['cursor'] = "watch"
             self.canvas.update()
-            self.canvas.delete(tkinter.ALL)     # XXX could be more subtle
+            self.canvas.delete('all')     # XXX could be more subtle
             self.draw(7, 2)
-            x0, y0, x1, y1 = self.canvas.bbox(tkinter.ALL)
+            x0, y0, x1, y1 = self.canvas.bbox('all')
             self.canvas.configure(scrollregion=(0, 0, x1, y1))
             self.canvas['cursor'] = oldcursor
 
@@ -396,7 +396,7 @@ class TreeNode:
     def edit(self, event=None):
         self.entry = tkinter.Entry(self.label, bd=0, highlightthickness=1, width=0)
         self.entry.insert(0, self.label['text'])
-        self.entry.selection_range(0, tkinter.END)
+        self.entry.selection_range(0, 'end')
         self.entry.pack(ipadx=5)
         self.entry.focus_set()
         self.entry.bind("<Return>", self.edit_finish)
@@ -634,7 +634,7 @@ class FileTreeItem(TreeItem):
             fp.close()
             self.textbox.clear()
             for line in B:
-                self.textbox.component('text').insert(tkinter.END, str(line))
+                self.textbox.component('text').insert('end', str(line))
 
         # binaries
         else:
@@ -642,7 +642,7 @@ class FileTreeItem(TreeItem):
             if spidertype != 0:  #== "image":
                 infotxt = self.getSpiderInfo(self.path)
                 self.textbox.clear()
-                self.textbox.component('text').insert(tkinter.END, infotxt)
+                self.textbox.component('text').insert('end', infotxt)
                 if spidertype == "image":
                     self.putImage(self.path, clear=0)
             
@@ -687,7 +687,7 @@ class FileTreeItem(TreeItem):
         text = self.textbox.component('text')
         
         label = tkinter.Label(image=photo)
-        text.window_create(tkinter.END, window=label)
+        text.window_create('end', window=label)
 
         self.textbox.photolabel = label
         self.textbox.labelphoto = photo
@@ -834,7 +834,7 @@ class TreeViewer:
         # Make the File menu
         Filebtn = tkinter.Menubutton(self.mBar, text='File', underline=0,
                                  relief='flat')
-        Filebtn.pack(side=tkinter.LEFT, padx=5, pady=5)
+        Filebtn.pack(side='left', padx=5, pady=5)
         Filebtn.menu = tkinter.Menu(Filebtn, tearoff=0)
         Filebtn.menu.add_command(label='Open directory',
                                  command=self.getDirectory)
@@ -867,7 +867,7 @@ class TreeViewer:
 
         # Make the Help menu
         Helpbtn = tkinter.Menubutton(self.mBar, text='Help', underline=0, relief='flat')
-        Helpbtn.pack(side=tkinter.RIGHT, padx=5, pady=5)
+        Helpbtn.pack(side='right', padx=5, pady=5)
         Helpbtn.menu = tkinter.Menu(Helpbtn, tearoff=0)
         Helpbtn.menu.add_command(label='List Icons',
                                  command=lambda m=self.master: listicons(m))
@@ -944,7 +944,7 @@ class TreeViewer:
         f2.pack(side='top', fill='both', expand=1)
         cb = tkinter.Checkbutton(f2, text="Display html files in browser",
                          variable=self.htmlVar)
-        cb.pack(anchor='w', side='bottom', padx=5,pady=5, fill=tkinter.X, expand=1)
+        cb.pack(anchor='w', side='bottom', padx=5,pady=5, fill='x', expand=1)
 
         ok = tkinter.Button(win, text='Done', command=win.destroy)
         ok.pack(side='bottom', anchor='se', padx=2, pady=2)

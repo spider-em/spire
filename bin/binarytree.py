@@ -23,7 +23,7 @@ import os
 import Pmw 
 
 from   Spider  import Spiderutils
-import tkinter  #### from   tkinter import *
+import tkinter
 
 try:
     from   PIL import Image, ImageTk
@@ -90,7 +90,7 @@ class BinaryTreeCanvas:
 
         # Make the File menu
         Filebtn = tkinter.Menubutton(self.leftframe, text='File', relief='flat')
-        Filebtn.pack(side=tkinter.LEFT, padx=5, pady=5)
+        Filebtn.pack(side='left', padx=5, pady=5)
         Filebtn.menu = tkinter.Menu(Filebtn, tearoff=0)
 
         Filebtn.menu.add_command(label='Save selection', underline=0,
@@ -103,14 +103,14 @@ class BinaryTreeCanvas:
 
         # Make help menu
         Helpbtn = tkinter.Menubutton(self.mBar, text='Help', underline=0, relief='flat')
-        Helpbtn.pack(side=tkinter.RIGHT, padx=5, pady=5)
+        Helpbtn.pack(side='right', padx=5, pady=5)
         Helpbtn.menu = tkinter.Menu(Helpbtn, tearoff=0)
         Helpbtn.menu.add_command(label='Keyboard shortcuts', underline=0, 
                                  command=self.shortcuts)
         Helpbtn['menu'] = Helpbtn.menu
 
         # Pack menu bar
-        self.leftframe.pack(side=tkinter.LEFT) # , padx=5, pady=5)
+        self.leftframe.pack(side='left') # , padx=5, pady=5)
         self.mBar.pack(side='top', fill = 'x')
 
     def drawTree(self) :
@@ -129,13 +129,13 @@ class BinaryTreeCanvas:
         print('Canvas dimensions:',self.canvasx,self.canvasy)
 
         # scrollbars
-        self.HscrollBar = tkinter.Scrollbar(self.master, command=self.tree_canvas.xview, orient=tkinter.HORIZONTAL)
+        self.HscrollBar = tkinter.Scrollbar(self.master, command=self.tree_canvas.xview, orient='horizontal')
         self.tree_canvas.configure(xscrollcommand=self.HscrollBar.set)
-        self.HscrollBar.pack(side=tkinter.BOTTOM, fill=tkinter.X)
+        self.HscrollBar.pack(side='bottom', fill='x')
 
         self.VscrollBar = tkinter.Scrollbar(self.master, command=self.tree_canvas.yview, orient=tkinter.VERTICAL)
         self.tree_canvas.configure(yscrollcommand=self.VscrollBar.set)
-        self.VscrollBar.pack(side=tkinter.RIGHT, fill=tkinter.Y)
+        self.VscrollBar.pack(side='right', fill=tkinter.Y)
 
         self.class2label = {}  # lookup table to find an image
         
@@ -187,7 +187,7 @@ class BinaryTreeCanvas:
                     self.photo_list.append(image_label)
 
                     # draw image window
-                    self.tree_canvas.create_window(nodeCoordx,nodeCoordy, window=image_label, anchor=tkinter.S)
+                    self.tree_canvas.create_window(nodeCoordx,nodeCoordy, window=image_label, anchor='s')
             
                     ###last_node = classname  # necessary?
 
@@ -205,28 +205,28 @@ class BinaryTreeCanvas:
         sc.title("Shortcuts")
         rownum = 0
 
-        scmain = tkinter.Frame(sc, borderwidth=2, relief=tkinter.RIDGE)
-        tkinter.Label(scmain, text='Main window:').grid(row=rownum, sticky=tkinter.W)
+        scmain = tkinter.Frame(sc, borderwidth=2, relief='ridge')
+        tkinter.Label(scmain, text='Main window:').grid(row=rownum, sticky='w')
 
         rownum += 1
-        tkinter.Label(scmain, text='+'                 ).grid(row=rownum, column=0, sticky=tkinter.W)
-        tkinter.Label(scmain, text='Add row'           ).grid(row=rownum, column=1, sticky=tkinter.W)
+        tkinter.Label(scmain, text='+'                 ).grid(row=rownum, column=0, sticky='w')
+        tkinter.Label(scmain, text='Add row'           ).grid(row=rownum, column=1, sticky='w')
 
         rownum += 1
-        tkinter.Label(scmain, text='-'                 ).grid(row=rownum, column=0, sticky=tkinter.W)
-        tkinter.Label(scmain, text='Remove row'        ).grid(row=rownum, column=1, sticky=tkinter.W)
+        tkinter.Label(scmain, text='-'                 ).grid(row=rownum, column=0, sticky='w')
+        tkinter.Label(scmain, text='Remove row'        ).grid(row=rownum, column=1, sticky='w')
 
         rownum += 1
-        tkinter.Label(scmain, text='Control-s'         ).grid(row=rownum, column=0, sticky=tkinter.W)
-        tkinter.Label(scmain, text='Save selections'   ).grid(row=rownum, column=1, sticky=tkinter.W)
+        tkinter.Label(scmain, text='Control-s'         ).grid(row=rownum, column=0, sticky='w')
+        tkinter.Label(scmain, text='Save selections'   ).grid(row=rownum, column=1, sticky='w')
 
         rownum += 1
-        tkinter.Label(scmain, text='Control-r'         ).grid(row=rownum, column=0, sticky=tkinter.W)
-        tkinter.Label(scmain, text='Read selections'   ).grid(row=rownum, column=1, sticky=tkinter.W)
+        tkinter.Label(scmain, text='Control-r'         ).grid(row=rownum, column=0, sticky='w')
+        tkinter.Label(scmain, text='Read selections'   ).grid(row=rownum, column=1, sticky='w')
 
         rownum += 1
-        tkinter.Label(scmain, text='Control-w'         ).grid(row=rownum, column=0, sticky=tkinter.W)
-        tkinter.Label(scmain, text='Close window'      ).grid(row=rownum, column=1, sticky=tkinter.W)
+        tkinter.Label(scmain, text='Control-w'         ).grid(row=rownum, column=0, sticky='w')
+        tkinter.Label(scmain, text='Close window'      ).grid(row=rownum, column=1, sticky='w')
 
         scmain.pack(padx=5, pady=5, expand=1)
 

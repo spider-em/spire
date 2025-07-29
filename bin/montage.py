@@ -167,7 +167,7 @@ class montage:
         # Make the Display menu
         Dspbtn = tkinter.Menubutton(self.mBar, text='Display', relief='flat')
         ###import inspect; print(f"{os.path.splitext( os.path.basename(__file__) )[0]}:169:\t{inspect.stack()[0][3]}() :\tDspbtn.cget('font') = '{Dspbtn.cget('font')}'")
-        Dspbtn.pack(side=tkinter.LEFT, padx=5, pady=5)
+        Dspbtn.pack(side='left', padx=5, pady=5)
         Dspbtn.menu = tkinter.Menu(Dspbtn, tearoff=0)
 
         Dspbtn.menu.add_command(label='no. columns', underline=0,
@@ -195,7 +195,7 @@ class montage:
         
         # Make the Select menu
         Selbtn = tkinter.Menubutton(self.mBar, text='Select', relief='flat')
-        Selbtn.pack(side=tkinter.LEFT, padx=5, pady=5)
+        Selbtn.pack(side='left', padx=5, pady=5)
         Selbtn.menu = tkinter.Menu(Selbtn, tearoff=0)
         Selbtn.menu.add_command(label='Save selections', underline=0,
                                 command=self.saveSelections)
@@ -207,7 +207,7 @@ class montage:
         sc = self.selectClasses[self.selectedColor.get()]
         Classbtn = tkinter.Menubutton(self.mBar, text=sc.label, relief='flat',
                               background=sc.color)
-        Classbtn.pack(side=tkinter.LEFT, padx=5, pady=5)
+        Classbtn.pack(side='left', padx=5, pady=5)
         Classbtn.menu = tkinter.Menu(Classbtn, tearoff=0)
         keys = list(self.selectClasses.keys())
         keys.sort()
@@ -252,7 +252,7 @@ class montage:
         self.sf = Pmw.ScrolledFrame(self.top)
         self.fr = self.sf.interior()
         self.display(self.fr)
-        self.sf.pack(fill=tkinter.BOTH, expand=1)
+        self.sf.pack(fill='both', expand=1)
         
         ht = self.fr.winfo_reqheight()
         wd = self.fr.winfo_reqwidth()

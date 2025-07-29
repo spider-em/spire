@@ -48,10 +48,10 @@ class Viewer:
         im_width= im.size[0]
         self.canvas = tkinter.Canvas(master, width=im_width, height=im.size[1])
         self.tkimage = ImageTk.PhotoImage(bim, palette=256)
-        self.canvas.create_image(0, 0, image=self.tkimage, anchor=tkinter.NW)
+        self.canvas.create_image(0, 0, image=self.tkimage, anchor='nw')
         self.canvas.pack(side='top')
 
-        scale = tkinter.Scale( master, orient=tkinter.HORIZONTAL, from_=0, to=im_width//2,
+        scale = tkinter.Scale( master, orient='horizontal', from_=0, to=im_width//2,
                       resolution=1, command=self.update, length=im_width+1)
         scale.set(self.value)
         scale.bind("<ButtonRelease-1>", self.redraw)
@@ -129,7 +129,7 @@ class Viewer:
 
         # update canvas
         self.canvas.delete("overlay")
-        self.canvas.create_image(0, 0, image=self.overlay, anchor=tkinter.NW,
+        self.canvas.create_image(0, 0, image=self.overlay, anchor='nw',
                 tags="overlay")
 
 

@@ -499,7 +499,7 @@ class CTFplot:
         # Make the File menu
         Filebtn = tkinter.Menubutton(self.mBar, text='File', underline=0,
                                  relief='flat')
-        Filebtn.pack(side=tkinter.LEFT, padx=5, pady=5)
+        Filebtn.pack(side='left', padx=5, pady=5)
         Filebtn.menu = tkinter.Menu(Filebtn, tearoff=0)
         Filebtn.menu.add_command(label='Open defocus file',
                                  command=self.openDefocus)
@@ -517,7 +517,7 @@ class CTFplot:
         
         # Make the Option menu
         Optbtn = tkinter.Menubutton(self.mBar, text='Options', relief='flat')
-        Optbtn.pack(side=tkinter.LEFT, padx=5, pady=5)
+        Optbtn.pack(side='left', padx=5, pady=5)
         Optbtn.menu = tkinter.Menu(Optbtn, tearoff=0)
 
         Optbtn.menu.add_command(label='Parameters', underline=0,
@@ -540,7 +540,7 @@ class CTFplot:
         
         # Make the Show menu
         Showbtn = tkinter.Menubutton(self.mBar, text='Show', relief='flat')
-        Showbtn.pack(side=tkinter.LEFT, padx=5, pady=5)
+        Showbtn.pack(side='left', padx=5, pady=5)
         Showbtn.menu = tkinter.Menu(Showbtn, tearoff=0)
 
         Showbtn.menu.add_checkbutton(label='1D spectrum', 
@@ -582,7 +582,7 @@ class CTFplot:
         
         # Help menu
         Helpbtn = tkinter.Menubutton(self.mBar, text='Help', relief='flat')
-        Helpbtn.pack(side=tkinter.RIGHT, padx=5, pady=5)
+        Helpbtn.pack(side='right', padx=5, pady=5)
         Helpbtn.menu = tkinter.Menu(Helpbtn, tearoff=0)
 
         Helpbtn.menu.add_command(label='Help', command=ctfhelp)
@@ -650,7 +650,7 @@ class CTFplot:
         # Embed the Figure in the Tkinter Frame
         self.canvas = backend_tkagg.FigureCanvasTkAgg(self.fig, master=fg)
         self.canvas.draw()
-        self.canvas.get_tk_widget().pack(side=tkinter.TOP, fill=tkinter.BOTH, expand=1)
+        self.canvas.get_tk_widget().pack(side='top', fill='both', expand=1)
 
         self.xmin.set(0)
         xmax = self.max_spat_freq

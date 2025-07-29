@@ -59,24 +59,24 @@ class MyGnuplotPlot:
         self.showFiles()
 
         f3 = tkinter.Frame(self.topwindow, relief=tkinter.RAISED, borderwidth=1)
-        tkinter.Label(f3, text="set x range:").grid(row=0, column=0, sticky=tkinter.W)
+        tkinter.Label(f3, text="set x range:").grid(row=0, column=0, sticky='w')
         xentry = tkinter.Entry(f3, width=16, textvariable=self.x)
         xentry.grid(row=0, column=1)
         xentry.bind('<Return>', self.plotSelected)
 
-        tkinter.Label(f3, text="set y range:").grid(row=1, column=0, sticky=tkinter.W)
+        tkinter.Label(f3, text="set y range:").grid(row=1, column=0, sticky='w')
         yentry = tkinter.Entry(f3, width=16, textvariable=self.y)
         yentry.grid(row=1, column=1)
         yentry.bind('<Return>', self.plotSelected)
 
-        tkinter.Label(f3, text="set columns:").grid(row=2, column=0, sticky=tkinter.W)
+        tkinter.Label(f3, text="set columns:").grid(row=2, column=0, sticky='w')
         centry = tkinter.Entry(f3, width=16, textvariable=self.cols)
         centry.grid(row=2, column=1)
         centry.bind('<Return>', self.plotSelected)
 
         f3.pack(side='bottom', fill='x', expand=1, anchor='s')
         # pack the list box last
-        self.sf.pack(side=tkinter.TOP, fill=tkinter.BOTH, expand=1, padx=5, pady=5, anchor='center')
+        self.sf.pack(side='top', fill='both', expand=1, padx=5, pady=5, anchor='center')
 
         #self.plotSelected()  # graph the selected items
 
@@ -88,7 +88,7 @@ class MyGnuplotPlot:
         # Make the File menu
         Filebtn = tkinter.Menubutton(self.mBar, text='File', underline=0,
                                  relief='flat')
-        Filebtn.pack(side=tkinter.LEFT, padx=5, pady=5)
+        Filebtn.pack(side='left', padx=5, pady=5)
         Filebtn.menu = tkinter.Menu(Filebtn, tearoff=0)
         Filebtn.menu.add_command(label='Clear', underline=0,
                                  command=self.uncheck)
@@ -110,7 +110,7 @@ class MyGnuplotPlot:
 
         # Make the Option menu
         Optbtn = tkinter.Menubutton(self.mBar, text='Options', underline=0, relief='flat')
-        Optbtn.pack(side=tkinter.LEFT, padx=5, pady=5)
+        Optbtn.pack(side='left', padx=5, pady=5)
         Optbtn.menu = tkinter.Menu(Optbtn, tearoff=0)
 
         # the options menu has a submenu for linestyles
@@ -166,14 +166,14 @@ class MyGnuplotPlot:
     def showFiles(self):
         for item in self.displaylist:
             setattr(self.var, item, tkinter.IntVar())
-            c = tkinter.Checkbutton(self.f2, text=item, anchor=tkinter.W,
+            c = tkinter.Checkbutton(self.f2, text=item, anchor='w',
                             variable=getattr(self.var, item))
             c.deselect()
             self.cblist.append(c)
             c.bind('<ButtonRelease-1>', self.plotSelected)
             
         for item in self.cblist:
-            item.pack(side=tkinter.TOP, anchor='w')
+            item.pack(side='top', anchor='w')
             
     def setOptionDB(self):
         self.topwindow.option_add('*font', 'Arial 12')
@@ -231,11 +231,11 @@ class MyGnuplotPlot:
         if item not in self.displaylist:
             self.displaylist.append(item)
             setattr(self.var, item, tkinter.IntVar())
-            c = tkinter.Checkbutton(self.f2, text=item, anchor=tkinter.W,
+            c = tkinter.Checkbutton(self.f2, text=item, anchor='w',
                             variable=getattr(self.var, item))
             c.deselect()
             c.bind('<ButtonRelease-1>', self.plotSelected)
-            c.pack(side=tkinter.TOP, anchor='w')
+            c.pack(side='top', anchor='w')
             #self.plotSelected()
         else:
             messagebox.showerror('Error', '%s is already in the list' % item)
