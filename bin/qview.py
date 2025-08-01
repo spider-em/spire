@@ -324,6 +324,7 @@ if __name__ == '__main__':
         if len(imglist) < 1:
             sys.exit()
         root = tkinter.Tk()
+        root.option_add("*Font", "Helvetica 12 bold")
         qw   = QuickWindow(root, imglist=imglist, useserver=0)
         root.mainloop()
 

@@ -77,7 +77,7 @@ class BinaryTreeCanvas:
         self.ydim = classavg.size[1] + 2*self.labelBorder + self.margin_width
 
         # appearance
-        self.good_color = '009e74'  # 'green'
+        self.good_color = '#009e74'  # 'green'
         self.select_flag = 1
         self.bad_color = '#d65d00'  # 'red'
 
